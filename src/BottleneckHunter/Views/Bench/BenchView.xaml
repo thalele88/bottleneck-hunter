@@ -1,0 +1,388 @@
+<UserControl x:Class="BottleneckHunter.Views.Bench.BenchView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:BottleneckHunter.Controls">
+    <UserControl.Resources>
+        <!-- Número grande de nota/resultado -->
+        <Style x:Key="Score" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="36"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+        </Style>
+        <Style x:Key="ScoreLabel" TargetType="TextBlock" BasedOn="{StaticResource Dim}">
+            <Setter Property="Margin" Value="0,0,0,2"/>
+        </Style>
+        <!-- Cartão que ocupa a largura toda -->
+        <Style x:Key="WideCard" TargetType="Border" BasedOn="{StaticResource Card}">
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+        <!-- Caixinha de dica dentro de um cartão (resultado explicado) -->
+        <Style x:Key="Hint" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Track}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Margin" Value="0,10,0,0"/>
+        </Style>
+        <Style x:Key="SliderLike" TargetType="Slider">
+            <Setter Property="Width" Value="220"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="IsSnapToTickEnabled" Value="True"/>
+            <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="MinWidth" Value="180"/>
+            <Setter Property="Padding" Value="8,5"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer x:Name="Scroller">
+        <StackPanel Margin="32,8,18,28">
+            <TextBlock Text="Benchmark e stress" Style="{StaticResource PageTitle}"/>
+            <TextBlock Style="{StaticResource PageSubtitle}"
+                       Text="Meça a força de cada peça do PC e descubra se ele aguenta trabalhar no máximo por muito tempo sem esquentar demais ou errar."/>
+
+            <Border Style="{StaticResource TipBox}">
+                <TextBlock Style="{StaticResource Body}">
+                    <Run FontWeight="Bold">💡 Benchmark ou stress test?</Run>
+                    <LineBreak/>
+                    <Run FontWeight="SemiBold">Benchmark</Run><Run> mede a </Run><Run FontWeight="SemiBold">velocidade</Run><Run>: dá uma nota para cada peça. Rode antes e depois de um ajuste para ver se melhorou.</Run>
+                    <LineBreak/>
+                    <Run FontWeight="SemiBold">Stress test</Run><Run> mede a </Run><Run FontWeight="SemiBold">estabilidade</Run><Run>: deixa as peças em 100% por vários minutos e confere se esquentam demais, perdem velocidade ou erram contas. É o teste certo para quem fez overclock ou tem travamentos e telas azuis.</Run>
+                    <LineBreak/>
+                    <Run Foreground="{DynamicResource TextDim}">Feche jogos e programas pesados antes de começar: eles roubam desempenho e deixam o resultado menor.</Run>
+                </TextBlock>
+            </Border>
+
+            <!-- Abas -->
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                <RadioButton x:Name="TabPerf" Style="{StaticResource Segment}" GroupName="benchTab" IsChecked="True" Checked="OnTab" Content="⚡  Medir desempenho"/>
+                <RadioButton x:Name="TabStress" Style="{StaticResource Segment}" GroupName="benchTab" Checked="OnTab" Content="🔥  Testar estabilidade"/>
+                <RadioButton x:Name="TabHistory" Style="{StaticResource Segment}" GroupName="benchTab" Checked="OnTab" Content="🕘  Histórico"/>
+            </StackPanel>
+
+            <Grid x:Name="TabHost">
+                <!-- ====================================================== DESEMPENHO -->
+                <StackPanel x:Name="PerfPanel">
+                    <Border Style="{StaticResource WideCard}">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Button x:Name="RunAllButton" Content="▶  Testar CPU, RAM e disco" Style="{StaticResource PrimaryButton}" Click="OnRunAll"/>
+                                <Button x:Name="CancelButton" Content="Cancelar" Style="{StaticResource GhostButton}" Margin="8,0,0,0" Click="OnCancel" Visibility="Collapsed"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Text="TESTE RÁPIDO" Style="{StaticResource CardTitle}"/>
+                                <TextBlock Style="{StaticResource Body}" Text="Roda os testes de processador, memória e disco em sequência (cerca de 1 minuto). Você também pode rodar cada um no seu cartão."/>
+                                <TextBlock x:Name="RunStatus" Style="{StaticResource Dim}" Margin="0,6,0,0" Visibility="Collapsed"/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- CPU -->
+                    <Border x:Name="CpuCard" Style="{StaticResource WideCard}">
+                        <StackPanel>
+                            <DockPanel>
+                                <Button x:Name="CpuButton" DockPanel.Dock="Right" Content="Testar processador" Style="{StaticResource GhostButton}" VerticalAlignment="Top" Click="OnRunCpu"/>
+                                <StackPanel>
+                                    <TextBlock Text="PROCESSADOR (CPU)" Style="{StaticResource CardTitle}"/>
+                                    <TextBlock x:Name="CpuName" Style="{StaticResource Body}" FontWeight="SemiBold" Text="—"/>
+                                    <TextBlock x:Name="CpuThreadsText" Style="{StaticResource Dim}"/>
+                                </StackPanel>
+                            </DockPanel>
+
+                            <Grid Margin="0,14,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <WrapPanel>
+                                        <StackPanel Margin="0,0,40,10" ToolTip="Velocidade de um núcleo sozinho. É a nota que mais pesa em jogos, porque a maioria deles depende de uma thread principal.">
+                                            <TextBlock Text="1 núcleo" Style="{StaticResource ScoreLabel}"/>
+                                            <TextBlock x:Name="CpuSingle" Text="—" Style="{StaticResource Score}" Foreground="{DynamicResource Cpu}"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,40,10" ToolTip="Todos os núcleos juntos. Pesa em edição de vídeo, compactar arquivos, renderizar e jogos que usam muitas threads.">
+                                            <TextBlock x:Name="CpuMultiLabel" Text="Todos os núcleos" Style="{StaticResource ScoreLabel}"/>
+                                            <TextBlock x:Name="CpuMulti" Text="—" Style="{StaticResource Score}" Foreground="{DynamicResource Accent}"/>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,0,0,10" ToolTip="Quantas vezes todos os núcleos juntos rendem mais que um só. O ideal seria igual ao número de núcleos físicos, um pouco mais com Hyper-Threading/SMT.">
+                                            <TextBlock Text="Ganho com vários núcleos" Style="{StaticResource ScoreLabel}"/>
+                                            <TextBlock x:Name="CpuScaling" Text="—" Style="{StaticResource Score}"/>
+                                        </StackPanel>
+                                    </WrapPanel>
+                                    <StackPanel x:Name="CpuBars" Margin="0,4,0,0"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                                        <Rectangle Width="12" Height="8" RadiusX="3" RadiusY="3" Fill="{DynamicResource Cpu}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="1 núcleo" Style="{StaticResource Dim}" Margin="6,0,16,0"/>
+                                        <Rectangle Width="12" Height="8" RadiusX="3" RadiusY="3" Fill="{DynamicResource Accent}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="todos os núcleos" Style="{StaticResource Dim}" Margin="6,0,0,0"/>
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <!-- O fractal que a CPU desenha durante o teste de ponto flutuante -->
+                                <Border x:Name="FractalBox" Grid.Column="1" Margin="20,0,0,0" CornerRadius="10" ClipToBounds="True" Width="320" Height="200"
+                                        Background="{DynamicResource Track}" VerticalAlignment="Top" Opacity="0.35">
+                                    <Grid>
+                                        <Image x:Name="Fractal" Stretch="UniformToFill" RenderOptions.BitmapScalingMode="HighQuality"/>
+                                        <TextBlock x:Name="FractalCaption" VerticalAlignment="Bottom" Margin="10,0,10,8" FontSize="11.5" Foreground="White" TextWrapping="Wrap"
+                                                   Text="Durante o teste, a CPU desenha este fractal ao vivo, quadro por quadro."/>
+                                    </Grid>
+                                </Border>
+                            </Grid>
+
+                            <Border x:Name="CpuProgressTrack" Height="4" CornerRadius="2" Background="{DynamicResource Track}" Margin="0,12,0,0" Visibility="Collapsed">
+                                <Border x:Name="CpuProgressFill" CornerRadius="2" Background="{DynamicResource Accent}" RenderTransformOrigin="0,0.5">
+                                    <Border.RenderTransform><ScaleTransform ScaleX="0"/></Border.RenderTransform>
+                                </Border>
+                            </Border>
+                            <Border x:Name="CpuHint" Style="{StaticResource Hint}" Visibility="Collapsed">
+                                <TextBlock x:Name="CpuHintText" Style="{StaticResource Body}"/>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- RAM -->
+                    <Border x:Name="RamCard" Style="{StaticResource WideCard}">
+                        <StackPanel>
+                            <DockPanel>
+                                <Button x:Name="RamButton" DockPanel.Dock="Right" Content="Testar memória" Style="{StaticResource GhostButton}" VerticalAlignment="Top" Click="OnRunRam"/>
+                                <StackPanel>
+                                    <TextBlock Text="MEMÓRIA (RAM)" Style="{StaticResource CardTitle}"/>
+                                    <TextBlock x:Name="RamInfo" Style="{StaticResource Body}" FontWeight="SemiBold" Text="—"/>
+                                    <TextBlock Style="{StaticResource Dim}" Text="Velocidade de leitura e escrita (quanto maior, melhor) e latência (quanto menor, melhor)."/>
+                                </StackPanel>
+                            </DockPanel>
+                            <StackPanel x:Name="RamBars" Margin="0,12,0,0"/>
+                            <Border x:Name="RamHint" Style="{StaticResource Hint}" Visibility="Collapsed">
+                                <TextBlock x:Name="RamHintText" Style="{StaticResource Body}"/>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Disco -->
+                    <Border x:Name="DiskCard" Style="{StaticResource WideCard}">
+                        <StackPanel>
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                                    <ComboBox x:Name="DriveBox" Margin="0,0,8,0" ToolTip="Qual unidade testar. O teste cria um arquivo temporário nela e apaga no final."/>
+                                    <ComboBox x:Name="DiskSizeBox" MinWidth="90" Margin="0,0,8,0" ToolTip="Tamanho do arquivo de teste. Maior = resultado mais realista, porém mais demorado.">
+                                        <ComboBoxItem Content="256 MB"/>
+                                        <ComboBoxItem Content="1 GB" IsSelected="True"/>
+                                        <ComboBoxItem Content="4 GB"/>
+                                    </ComboBox>
+                                    <Button x:Name="DiskButton" Content="Testar disco" Style="{StaticResource GhostButton}" Click="OnRunDisk"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock Text="DISCO (HD / SSD)" Style="{StaticResource CardTitle}"/>
+                                    <TextBlock Style="{StaticResource Dim}" Text="Sequencial = arquivos grandes, como copiar um filme. Aleatório 4K = muitos arquivos pequenos, como abrir o Windows, programas e carregar jogos (o que mais importa no dia a dia)."/>
+                                </StackPanel>
+                            </DockPanel>
+                            <StackPanel x:Name="DiskBars" Margin="0,12,0,0"/>
+                            <Border x:Name="DiskHint" Style="{StaticResource Hint}" Visibility="Collapsed">
+                                <TextBlock x:Name="DiskHintText" Style="{StaticResource Body}"/>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- GPU -->
+                    <Border x:Name="GpuCard" Style="{StaticResource WideCard}">
+                        <StackPanel>
+                            <DockPanel>
+                                <Button x:Name="GpuButton" DockPanel.Dock="Right" Content="Testar placa de vídeo" Style="{StaticResource GhostButton}" VerticalAlignment="Top" Click="OnRunGpu"/>
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock Text="PLACA DE VÍDEO (GPU)" Style="{StaticResource CardTitle}"/>
+                                    <TextBlock x:Name="GpuName" Style="{StaticResource Body}" FontWeight="SemiBold" Text="—"/>
+                                    <TextBlock Style="{StaticResource Dim}" Text="Abre uma janela que desenha um fractal 3D em Full HD por 30 segundos com Direct3D 11 e mede quantos quadros por segundo (FPS) a placa consegue."/>
+                                </StackPanel>
+                            </DockPanel>
+                            <WrapPanel Margin="0,12,0,0">
+                                <StackPanel Margin="0,0,40,0">
+                                    <TextBlock Text="FPS médio (1920 × 1080)" Style="{StaticResource ScoreLabel}"/>
+                                    <TextBlock x:Name="GpuFps" Text="—" Style="{StaticResource Score}" Foreground="{DynamicResource Gpu}"/>
+                                </StackPanel>
+                                <StackPanel>
+                                    <TextBlock Text="Temperatura máxima" Style="{StaticResource ScoreLabel}"/>
+                                    <TextBlock x:Name="GpuMaxTemp" Text="—" Style="{StaticResource Score}"/>
+                                </StackPanel>
+                            </WrapPanel>
+                            <Border x:Name="GpuHint" Style="{StaticResource Hint}" Visibility="Collapsed">
+                                <TextBlock x:Name="GpuHintText" Style="{StaticResource Body}"/>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ====================================================== ESTABILIDADE -->
+                <StackPanel x:Name="StressPanel" Visibility="Collapsed">
+                    <StackPanel x:Name="StressSetup">
+                        <Border Style="{StaticResource WideCard}">
+                            <StackPanel>
+                                <TextBlock Text="1. O QUE TESTAR" Style="{StaticResource CardTitle}"/>
+
+                                <DockPanel Margin="0,4,0,12">
+                                    <CheckBox x:Name="StressCpu" Style="{StaticResource Switch}" IsChecked="True" VerticalAlignment="Top" Margin="0,2,14,0"/>
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource Body}" FontWeight="SemiBold" Text="Processador (CPU)"/>
+                                        <TextBlock Style="{StaticResource Dim}" Text="Todos os núcleos em 100% fazendo contas que o app confere uma por uma."/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                            <RadioButton x:Name="CpuHeavy" Style="{StaticResource Segment}" GroupName="cpuMode" IsChecked="True" Content="Pesado (AVX)"
+                                                         ToolTip="Instruções vetoriais: o máximo de calor e consumo. Igual aos testes mais exigentes."/>
+                                            <RadioButton x:Name="CpuLight" Style="{StaticResource Segment}" GroupName="cpuMode" Content="Leve (inteiros)"
+                                                         ToolTip="Esquenta menos. Mais parecido com o uso em jogos e bom para notebooks."/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </DockPanel>
+
+                                <DockPanel Margin="0,0,0,12">
+                                    <CheckBox x:Name="StressRam" Style="{StaticResource Switch}" VerticalAlignment="Top" Margin="0,2,14,0"/>
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource Body}" FontWeight="SemiBold" Text="Memória (RAM)"/>
+                                        <TextBlock Style="{StaticResource Dim}" Text="Ocupa parte da RAM livre, escreve padrões e confere bit a bit. Acha pente com defeito e XMP/EXPO instável."/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                            <Slider x:Name="RamPercent" Style="{StaticResource SliderLike}" Minimum="25" Maximum="85" TickFrequency="5" Value="70" ValueChanged="OnRamPercentChanged"/>
+                                            <TextBlock x:Name="RamPercentText" Style="{StaticResource Dim}" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </DockPanel>
+
+                                <DockPanel>
+                                    <CheckBox x:Name="StressGpu" Style="{StaticResource Switch}" VerticalAlignment="Top" Margin="0,2,14,0"/>
+                                    <StackPanel>
+                                        <TextBlock Style="{StaticResource Body}" FontWeight="SemiBold" Text="Placa de vídeo (GPU)"/>
+                                        <TextBlock Style="{StaticResource Dim}" Text="Abre uma janela com um fractal 3D pesado. Junto com a CPU, também testa se a fonte aguenta o PC inteiro no máximo."/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                            <RadioButton x:Name="Gpu720" Style="{StaticResource Segment}" GroupName="gpuRes" Content="1280 × 720"/>
+                                            <RadioButton x:Name="Gpu1080" Style="{StaticResource Segment}" GroupName="gpuRes" IsChecked="True" Content="1920 × 1080"/>
+                                            <RadioButton x:Name="Gpu1440" Style="{StaticResource Segment}" GroupName="gpuRes" Content="2560 × 1440"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </DockPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource WideCard}">
+                            <StackPanel>
+                                <TextBlock Text="2. POR QUANTO TEMPO" Style="{StaticResource CardTitle}"/>
+                                <WrapPanel x:Name="DurationPanel">
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="dur" Tag="1" Content="1 min" Margin="0,0,6,6"/>
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="dur" Tag="5" Content="5 min" IsChecked="True" Margin="0,0,6,6"/>
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="dur" Tag="15" Content="15 min" Margin="0,0,6,6"/>
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="dur" Tag="30" Content="30 min" Margin="0,0,6,6"/>
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="dur" Tag="60" Content="1 hora" Margin="0,0,6,6"/>
+                                    <RadioButton Style="{StaticResource Segment}" GroupName="dur" Tag="0" Content="Até eu parar" Margin="0,0,6,6"/>
+                                </WrapPanel>
+                                <TextBlock Style="{StaticResource Dim}" Margin="0,4,0,0"
+                                           Text="5 minutos já mostram problemas de temperatura. Para validar um overclock, use 30 minutos ou mais."/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource WideCard}">
+                            <StackPanel>
+                                <TextBlock Text="3. LIMITE DE SEGURANÇA" Style="{StaticResource CardTitle}"/>
+                                <TextBlock Style="{StaticResource Dim}" Margin="0,0,0,10"
+                                           Text="Se a temperatura passar deste valor, o teste para na hora. As peças já se protegem sozinhas, mas é melhor não chegar lá."/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock Text="CPU" Style="{StaticResource Body}" Width="50" VerticalAlignment="Center"/>
+                                    <Slider x:Name="CpuLimit" Style="{StaticResource SliderLike}" Minimum="70" Maximum="100" TickFrequency="1" Value="90" ValueChanged="OnLimitChanged"/>
+                                    <TextBlock x:Name="CpuLimitText" Style="{StaticResource Body}" FontWeight="SemiBold" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="GPU" Style="{StaticResource Body}" Width="50" VerticalAlignment="Center"/>
+                                    <Slider x:Name="GpuLimit" Style="{StaticResource SliderLike}" Minimum="70" Maximum="95" TickFrequency="1" Value="87" ValueChanged="OnLimitChanged"/>
+                                    <TextBlock x:Name="GpuLimitText" Style="{StaticResource Body}" FontWeight="SemiBold" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <Border Style="{StaticResource WideCard}">
+                        <DockPanel>
+                            <Button x:Name="StressButton" DockPanel.Dock="Right" Content="🔥  Iniciar teste" Style="{StaticResource PrimaryButton}" VerticalAlignment="Center" Click="OnStressToggle"/>
+                            <StackPanel Margin="0,0,16,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse x:Name="StressDot" Width="10" Height="10" Fill="{DynamicResource TextDim}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock x:Name="StressState" Style="{StaticResource Body}" FontWeight="SemiBold" Text="Pronto para começar"/>
+                                </StackPanel>
+                                <TextBlock x:Name="StressTime" Style="{StaticResource Dim}" Margin="18,2,0,0" Text="Escolha o que testar e clique em Iniciar."/>
+                                <Border x:Name="StressProgressTrack" Height="4" CornerRadius="2" Background="{DynamicResource Track}" Margin="18,8,0,0" Visibility="Collapsed">
+                                    <Border x:Name="StressProgressFill" CornerRadius="2" Background="{DynamicResource Accent}" RenderTransformOrigin="0,0.5">
+                                        <Border.RenderTransform><ScaleTransform ScaleX="0"/></Border.RenderTransform>
+                                    </Border>
+                                </Border>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+
+                    <!-- Ao vivo -->
+                    <StackPanel x:Name="StressLive" Visibility="Collapsed">
+                        <WrapPanel x:Name="LiveGauges">
+                            <Border Style="{StaticResource Card}" ToolTip="Temperatura do processador. Até 85 °C em teste pesado é normal; acima de 95 °C ele começa a se proteger reduzindo o clock.">
+                                <StackPanel>
+                                    <TextBlock Text="TEMPERATURA DA CPU" Style="{StaticResource CardTitle}"/>
+                                    <c:Gauge x:Name="CpuTempGauge" Label="agora" Unit="°C" Maximum="105" WarnAt="80" BadAt="90"/>
+                                    <TextBlock x:Name="CpuLiveInfo" Style="{StaticResource Dim}" HorizontalAlignment="Center" Text="—"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" ToolTip="Temperatura da placa de vídeo. A maioria aguenta bem até uns 85 °C.">
+                                <StackPanel>
+                                    <TextBlock Text="TEMPERATURA DA GPU" Style="{StaticResource CardTitle}"/>
+                                    <c:Gauge x:Name="GpuTempGauge" Label="agora" Unit="°C" Maximum="105" WarnAt="78" BadAt="85"/>
+                                    <TextBlock x:Name="GpuLiveInfo" Style="{StaticResource Dim}" HorizontalAlignment="Center" Text="—"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" MinWidth="230">
+                                <StackPanel>
+                                    <TextBlock Text="CONFERÊNCIA" Style="{StaticResource CardTitle}"/>
+                                    <TextBlock Text="Erros encontrados" Style="{StaticResource Dim}"/>
+                                    <TextBlock x:Name="LiveErrors" Text="0" Style="{StaticResource Score}" Foreground="{DynamicResource Good}"/>
+                                    <TextBlock x:Name="LiveCpuRounds" Style="{StaticResource Dim}" Margin="0,6,0,0"/>
+                                    <TextBlock x:Name="LiveRam" Style="{StaticResource Dim}" Margin="0,2,0,0"/>
+                                    <TextBlock x:Name="LiveFps" Style="{StaticResource Dim}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </WrapPanel>
+                        <Border Style="{StaticResource WideCard}">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,8">
+                                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                                        <Ellipse Width="10" Height="10" Fill="{DynamicResource Cpu}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="CPU" Margin="6,0,14,0" Style="{StaticResource Dim}"/>
+                                        <Ellipse Width="10" Height="10" Fill="{DynamicResource Gpu}" VerticalAlignment="Center"/>
+                                        <TextBlock Text="GPU" Margin="6,0,0,0" Style="{StaticResource Dim}"/>
+                                    </StackPanel>
+                                    <TextBlock Text="TEMPERATURA NOS ÚLTIMOS 2 MINUTOS" Style="{StaticResource CardTitle}"/>
+                                </DockPanel>
+                                <c:LineChart x:Name="TempChart" Height="180" MaxY="100" YUnit="°" Capacity="120"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Relatório -->
+                    <Border x:Name="ReportCard" Style="{StaticResource WideCard}" Visibility="Collapsed">
+                        <StackPanel>
+                            <TextBlock Text="RESULTADO" Style="{StaticResource CardTitle}"/>
+                            <TextBlock x:Name="ReportVerdict" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource Text}"/>
+                            <TextBlock x:Name="ReportSummary" Style="{StaticResource Dim}" Margin="0,4,0,10"/>
+                            <StackPanel x:Name="ReportFindings"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <!-- ====================================================== HISTÓRICO -->
+                <StackPanel x:Name="HistoryPanel" Visibility="Collapsed">
+                    <Border Style="{StaticResource WideCard}">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="Limpar histórico" Style="{StaticResource GhostButton}" VerticalAlignment="Center" Click="OnClearHistory"/>
+                            <StackPanel Margin="0,0,16,0">
+                                <TextBlock Text="SEUS RESULTADOS" Style="{StaticResource CardTitle}"/>
+                                <TextBlock Style="{StaticResource Body}" Text="Cada teste fica salvo aqui. Compare antes e depois de trocar uma peça, limpar o PC, atualizar drivers ou mudar um ajuste: a seta mostra se melhorou ou piorou em relação ao teste anterior do mesmo tipo."/>
+                            </StackPanel>
+                        </DockPanel>
+                    </Border>
+                    <StackPanel x:Name="HistoryList"/>
+                    <TextBlock x:Name="HistoryEmpty" Style="{StaticResource Dim}" Margin="4,0,0,0" Text="Nenhum teste feito ainda. Rode um benchmark ou stress test e ele aparece aqui."/>
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
