@@ -1,0 +1,448 @@
+<UserControl x:Class="BottleneckHunter.Views.Optimize.OptimizeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:BottleneckHunter.Controls"
+             xmlns:o="clr-namespace:BottleneckHunter.Core.Optimize">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolVis"/>
+
+        <!-- Abas grandes no topo: cada uma mostra um resumo ao vivo -->
+        <Style x:Key="TabCard" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,14,14"/>
+            <Setter Property="MinWidth" Value="220"/>
+            <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Grid>
+                            <Border x:Name="B" CornerRadius="14" Padding="16,14" BorderThickness="1"
+                                    Background="{DynamicResource Card}" BorderBrush="{DynamicResource Border}">
+                                <ContentPresenter/>
+                            </Border>
+                            <Border x:Name="Line" Height="3" CornerRadius="2" VerticalAlignment="Bottom" Margin="16,0,16,0"
+                                    Background="{DynamicResource Accent}" RenderTransformOrigin="0.5,0.5">
+                                <Border.RenderTransform><ScaleTransform ScaleX="0"/></Border.RenderTransform>
+                            </Border>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="B" Property="Background" Value="{DynamicResource CardHover}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard><Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Line" Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.35">
+                                            <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.4"/></DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard></BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard><Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Line" Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="0" Duration="0:0:0.2"/>
+                                    </Storyboard></BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="TabIcon" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="20"/>
+            <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,12,0"/>
+        </Style>
+
+        <!-- Etiquetas pequenas (impacto, recomendado, reiniciar) -->
+        <Style x:Key="Badge" TargetType="Border">
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="7,2"/>
+            <Setter Property="Margin" Value="8,0,0,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Background" Value="{DynamicResource Track}"/>
+        </Style>
+        <Style x:Key="BadgeText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
+        </Style>
+
+        <Style x:Key="SmallGhost" TargetType="Button" BasedOn="{StaticResource GhostButton}">
+            <Setter Property="Padding" Value="12,5"/>
+            <Setter Property="FontSize" Value="12"/>
+        </Style>
+
+        <Style x:Key="SectionHeader" TargetType="TextBlock" BasedOn="{StaticResource CardTitle}">
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="Margin" Value="2,10,0,10"/>
+            <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+        </Style>
+
+        <!-- Um ajuste do Windows -->
+        <DataTemplate x:Key="TweakTemplate">
+            <Border Style="{StaticResource Card}" Loaded="OnItemLoaded">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="18,0,0,0" MinWidth="96">
+                        <CheckBox Style="{StaticResource Switch}" HorizontalAlignment="Right"
+                                  IsChecked="{Binding IsOn, Mode=TwoWay}" IsEnabled="{Binding IsAvailable}" Click="OnTweakToggle"
+                                  ToolTip="Ligado = ajuste aplicado. Desligar devolve o valor original."/>
+                        <Button Content="↺ Restaurar" Style="{StaticResource SmallGhost}" HorizontalAlignment="Right" Margin="0,10,0,0"
+                                Visibility="{Binding CanRestore, Converter={StaticResource BoolVis}}" Click="OnTweakRestore"
+                                ToolTip="Volta exatamente ao valor que o Windows tinha antes deste app mexer."/>
+                    </StackPanel>
+                    <StackPanel>
+                        <WrapPanel>
+                            <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource Text}" VerticalAlignment="Center"/>
+                            <Border Style="{StaticResource Badge}">
+                                <TextBlock Text="{Binding ImpactText}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource BadgeText}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Impact}" Value="Grande">
+                                                    <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Impact}" Value="Medio">
+                                                    <Setter Property="Foreground" Value="{DynamicResource Cpu}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Border>
+                            <Border Style="{StaticResource Badge}" Visibility="{Binding Recommended, Converter={StaticResource BoolVis}}">
+                                <TextBlock Text="✓ Recomendado" Style="{StaticResource BadgeText}" Foreground="{DynamicResource Good}"/>
+                            </Border>
+                            <Border Style="{StaticResource Badge}" Visibility="{Binding NeedsRestart, Converter={StaticResource BoolVis}}">
+                                <TextBlock Text="⟳ Precisa reiniciar" Style="{StaticResource BadgeText}" Foreground="{DynamicResource Warn}"/>
+                            </Border>
+                        </WrapPanel>
+                        <TextBlock Text="{Binding What}" Style="{StaticResource Body}" Margin="0,8,0,0"/>
+                        <TextBlock Style="{StaticResource Dim}" Margin="0,6,0,0">
+                            <Run Text="Por que ajuda: " FontWeight="SemiBold"/><Run Text="{Binding Why, Mode=OneWay}"/>
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Dim}" Margin="0,6,0,0" Foreground="{DynamicResource Warn}"
+                                   Visibility="{Binding HasCaveat, Converter={StaticResource BoolVis}}">
+                            <Run Text="⚠ Do que abrir mão: " FontWeight="SemiBold"/><Run Text="{Binding Caveat, Mode=OneWay}"/>
+                        </TextBlock>
+                        <TextBlock Style="{StaticResource Dim}" Margin="0,6,0,0" Foreground="{DynamicResource Bad}"
+                                   Text="{Binding UnavailableReason}"
+                                   Visibility="{Binding IsUnavailable, Converter={StaticResource BoolVis}}"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+        </DataTemplate>
+
+        <!-- Um programa de inicialização -->
+        <DataTemplate x:Key="StartupTemplate">
+            <Border Style="{StaticResource Card}" Padding="16,14" Loaded="OnItemLoaded">
+                <DockPanel>
+                    <Grid DockPanel.Dock="Left" Width="36" Height="36" Margin="0,0,14,0" VerticalAlignment="Top">
+                        <Border CornerRadius="9" Background="{DynamicResource Track}"/>
+                        <TextBlock Text="&#xE71D;" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="{DynamicResource TextDim}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Image Source="{Binding Icon}" Width="28" Height="28" RenderOptions.BitmapScalingMode="HighQuality"/>
+                    </Grid>
+                    <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center" Margin="18,0,0,0" MinWidth="96">
+                        <CheckBox Style="{StaticResource Switch}" HorizontalAlignment="Right"
+                                  IsChecked="{Binding IsOn, Mode=TwoWay}" Click="OnStartupToggle"
+                                  ToolTip="Ligado = abre junto com o Windows."/>
+                        <Button Content="↺ Restaurar" Style="{StaticResource SmallGhost}" HorizontalAlignment="Right" Margin="0,10,0,0"
+                                Visibility="{Binding CanRestore, Converter={StaticResource BoolVis}}" Click="OnStartupRestore"
+                                ToolTip="Volta ao estado que estava antes deste app mexer."/>
+                    </StackPanel>
+                    <StackPanel>
+                        <WrapPanel>
+                            <TextBlock Text="{Binding Name}" FontSize="14.5" FontWeight="SemiBold" Foreground="{DynamicResource Text}" VerticalAlignment="Center"/>
+                            <Border Style="{StaticResource Badge}">
+                                <TextBlock Text="{Binding AdviceLabel}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource BadgeText}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Advice}" Value="{x:Static o:StartupAdvice.PodeDesativar}">
+                                                    <Setter Property="Foreground" Value="{DynamicResource Good}"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Advice}" Value="{x:Static o:StartupAdvice.MelhorManter}">
+                                                    <Setter Property="Foreground" Value="{DynamicResource Warn}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Border>
+                        </WrapPanel>
+                        <TextBlock Text="{Binding Subtitle}" Style="{StaticResource Dim}" Margin="0,3,0,0"/>
+                        <TextBlock Text="{Binding Command}" Style="{StaticResource Dim}" FontSize="11.5" Opacity="0.75" Margin="0,3,0,0"
+                                   TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" ToolTip="{Binding Command}"/>
+                        <TextBlock Text="{Binding AdviceText}" Style="{StaticResource Dim}" Margin="0,6,0,0"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <ScrollViewer x:Name="Scroller">
+            <StackPanel Margin="32,8,18,28">
+                <TextBlock Text="Otimizar o PC" Style="{StaticResource PageTitle}"/>
+                <TextBlock Style="{StaticResource PageSubtitle}"
+                           Text="Ajustes seguros do Windows, limpeza de memória e programas que abrem sozinhos. Tudo explicado e sempre com botão de desfazer."/>
+
+                <Border Style="{StaticResource TipBox}">
+                    <TextBlock Style="{StaticResource Body}">
+                        <Run FontWeight="Bold">💡 Otimizar não é mágica.</Run>
+                        <Run>Nenhum ajuste transforma uma placa de vídeo fraca em uma forte. O que dá para fazer é tirar o que atrapalha: programas abrindo sozinhos, gravações escondidas, economia de energia agressiva. Antes de qualquer mudança o app anota como estava, e o botão</Run>
+                        <Run FontWeight="Bold">↺ Restaurar</Run>
+                        <Run>devolve exatamente ao original.</Run>
+                    </TextBlock>
+                </Border>
+
+                <!-- Abas -->
+                <WrapPanel x:Name="Tabs">
+                    <RadioButton x:Name="TabMemory" Style="{StaticResource TabCard}" GroupName="opt" IsChecked="True" Checked="OnTabChecked">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE950;" Style="{StaticResource TabIcon}"/>
+                            <StackPanel>
+                                <TextBlock Text="Memória RAM" FontSize="15" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="MemorySummary" Text="lendo..." Style="{StaticResource Dim}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton x:Name="TabTweaks" Style="{StaticResource TabCard}" GroupName="opt" Checked="OnTabChecked">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE713;" Style="{StaticResource TabIcon}"/>
+                            <StackPanel>
+                                <TextBlock Text="Ajustes do Windows" FontSize="15" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="TweaksSummary" Text="lendo..." Style="{StaticResource Dim}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton x:Name="TabStartup" Style="{StaticResource TabCard}" GroupName="opt" Checked="OnTabChecked">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE7E8;" Style="{StaticResource TabIcon}"/>
+                            <StackPanel>
+                                <TextBlock Text="Inicialização" FontSize="15" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="StartupSummary" Text="lendo..." Style="{StaticResource Dim}"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </RadioButton>
+                </WrapPanel>
+
+                <Grid x:Name="PanelHost">
+                    <Grid.RenderTransform><TranslateTransform/></Grid.RenderTransform>
+
+                    <!-- ============ MEMÓRIA ============ -->
+                    <StackPanel x:Name="MemoryPanel">
+                        <DockPanel>
+                            <Border DockPanel.Dock="Left" Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="RAM EM USO" Style="{StaticResource CardTitle}"/>
+                                    <c:Gauge x:Name="RamGauge" Label="em uso" WarnAt="80" BadAt="90"/>
+                                    <TextBlock x:Name="RamText" Style="{StaticResource Dim}" HorizontalAlignment="Center" Text="—"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}">
+                                <StackPanel>
+                                    <TextBlock Text="LIMPAR A MEMÓRIA" Style="{StaticResource CardTitle}"/>
+                                    <WrapPanel>
+                                        <Button x:Name="QuickCleanButton" Style="{StaticResource PrimaryButton}" Margin="0,0,10,8" Click="OnQuickClean"
+                                                ToolTip="Pede aos programas que devolvam a memória que não estão usando agora. Nenhum programa é fechado.">
+                                            <TextBlock><Run FontFamily="Segoe MDL2 Assets" Text="&#xE945;"/><Run Text="  Limpeza rápida"/></TextBlock>
+                                        </Button>
+                                        <Button x:Name="FullCleanButton" Style="{StaticResource GhostButton}" Margin="0,0,10,8" Click="OnFullClean"
+                                                ToolTip="Também esvazia o cache do Windows (lista em espera). Útil quando um jogo engasga depois de muito tempo aberto.">
+                                            <TextBlock><Run FontFamily="Segoe MDL2 Assets" Text="&#xE74D;"/><Run Text="  Limpeza completa"/></TextBlock>
+                                        </Button>
+                                        <Grid x:Name="Spinner" Width="26" Height="26" VerticalAlignment="Center" Margin="4,0,0,8" Visibility="Collapsed">
+                                            <Ellipse Stroke="{DynamicResource Track}" StrokeThickness="3"/>
+                                            <Ellipse Stroke="{DynamicResource Accent}" StrokeThickness="3" StrokeDashArray="3 6" RenderTransformOrigin="0.5,0.5">
+                                                <Ellipse.RenderTransform><RotateTransform x:Name="SpinnerRotate"/></Ellipse.RenderTransform>
+                                            </Ellipse>
+                                        </Grid>
+                                    </WrapPanel>
+                                    <TextBlock Style="{StaticResource Dim}" Margin="0,2,0,0">
+                                        <Run FontWeight="SemiBold">Rápida:</Run>
+                                        <Run>os programas devolvem a memória que estão segurando sem usar. Nada é fechado; o que for preciso volta sozinho.</Run>
+                                        <LineBreak/>
+                                        <Run FontWeight="SemiBold">Completa:</Run>
+                                        <Run>também esvazia o cache do Windows. Por alguns segundos, abrir programas pode ficar um pouco mais lento enquanto ele se reconstrói.</Run>
+                                    </TextBlock>
+
+                                    <Border x:Name="CleanResult" Background="{DynamicResource AccentSoft}" CornerRadius="10" Padding="14,10" Margin="0,12,0,0"
+                                            Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
+                                        <Border.RenderTransform><ScaleTransform/></Border.RenderTransform>
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock x:Name="FreedValue" Text="0 MB" FontSize="26" FontWeight="Bold" Foreground="{DynamicResource Good}"/>
+                                                <TextBlock x:Name="FreedLabel" Text="saíram da memória em uso" Style="{StaticResource Body}" VerticalAlignment="Center" Margin="10,4,0,0"/>
+                                            </StackPanel>
+                                            <TextBlock x:Name="CleanDetail" Style="{StaticResource Dim}" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+                        </DockPanel>
+
+                        <Border Style="{StaticResource TipBox}">
+                            <TextBlock Style="{StaticResource Body}">
+                                <Run FontWeight="Bold">🤔 Quando vale a pena limpar?</Run>
+                                <Run>Quando a RAM em uso passa de 85% e o jogo começa a engasgar, ou depois de fechar um programa pesado. Com memória sobrando, limpar não deixa o PC mais rápido: o Windows já guarda coisas na RAM de propósito para abrir tudo mais rápido. O efeito é temporário; se a RAM vive cheia, a solução de verdade é fechar programas ou ter mais memória.</Run>
+                            </TextBlock>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="COMO A SUA MEMÓRIA ESTÁ DIVIDIDA AGORA" Style="{StaticResource CardTitle}"/>
+                                <Grid x:Name="MemBarHost" Height="26" Margin="0,4,0,14" SizeChanged="OnMemBarSize">
+                                    <Border Background="{DynamicResource Track}"/>
+                                    <StackPanel x:Name="MemBar" Orientation="Horizontal">
+                                        <Border x:Name="SegInUse" Background="{DynamicResource Cpu}" Width="0"/>
+                                        <Border x:Name="SegModified" Background="{DynamicResource Warn}" Width="0"/>
+                                        <Border x:Name="SegStandby" Background="{DynamicResource Accent}" Width="0"/>
+                                        <Border x:Name="SegFree" Background="{DynamicResource Good}" Width="0"/>
+                                    </StackPanel>
+                                </Grid>
+                                <UniformGrid Columns="2">
+                                    <DockPanel Margin="0,0,18,12">
+                                        <Ellipse DockPanel.Dock="Left" Width="12" Height="12" Fill="{DynamicResource Cpu}" VerticalAlignment="Top" Margin="0,4,10,0"/>
+                                        <StackPanel>
+                                            <TextBlock Style="{StaticResource Body}"><Run FontWeight="SemiBold">Em uso</Run><Run Text="  "/><Run x:Name="LegInUse" Foreground="{DynamicResource TextDim}"/></TextBlock>
+                                            <TextBlock Style="{StaticResource Dim}" Text="Ocupada pelos programas abertos e pelo Windows. É este número que diz se está faltando RAM."/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,0,18,12">
+                                        <Ellipse DockPanel.Dock="Left" Width="12" Height="12" Fill="{DynamicResource Warn}" VerticalAlignment="Top" Margin="0,4,10,0"/>
+                                        <StackPanel>
+                                            <TextBlock Style="{StaticResource Body}"><Run FontWeight="SemiBold">Modificada</Run><Run Text="  "/><Run x:Name="LegModified" Foreground="{DynamicResource TextDim}"/></TextBlock>
+                                            <TextBlock Style="{StaticResource Dim}" Text="Dados alterados que ainda precisam ser gravados no disco antes de o espaço ser reaproveitado."/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,0,18,12">
+                                        <Ellipse DockPanel.Dock="Left" Width="12" Height="12" Fill="{DynamicResource Accent}" VerticalAlignment="Top" Margin="0,4,10,0"/>
+                                        <StackPanel>
+                                            <TextBlock Style="{StaticResource Body}"><Run FontWeight="SemiBold">Em espera (cache)</Run><Run Text="  "/><Run x:Name="LegStandby" Foreground="{DynamicResource TextDim}"/></TextBlock>
+                                            <TextBlock Style="{StaticResource Dim}" Text="Coisas que o Windows guardou porque você pode precisar de novo. Se um programa pedir memória, ela é entregue na hora; por isso conta como disponível."/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,0,18,12">
+                                        <Ellipse DockPanel.Dock="Left" Width="12" Height="12" Fill="{DynamicResource Good}" VerticalAlignment="Top" Margin="0,4,10,0"/>
+                                        <StackPanel>
+                                            <TextBlock Style="{StaticResource Body}"><Run FontWeight="SemiBold">Livre</Run><Run Text="  "/><Run x:Name="LegFree" Foreground="{DynamicResource TextDim}"/></TextBlock>
+                                            <TextBlock Style="{StaticResource Dim}" Text="Totalmente vazia. Ter pouca memória livre é normal: memória vazia é memória desperdiçada."/>
+                                        </StackPanel>
+                                    </DockPanel>
+                                </UniformGrid>
+                                <TextBlock x:Name="ListsWarning" Style="{StaticResource Dim}" Foreground="{DynamicResource Warn}" Visibility="Collapsed"
+                                           Text="O Windows não liberou o detalhe das listas de memória. Mostrando só em uso e disponível."/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <DockPanel Margin="0,0,0,6">
+                                    <Button DockPanel.Dock="Right" Content="Atualizar" Style="{StaticResource SmallGhost}" Click="OnRefreshProcesses"/>
+                                    <TextBlock Text="QUEM MAIS USA MEMÓRIA AGORA" Style="{StaticResource CardTitle}" VerticalAlignment="Center"/>
+                                </DockPanel>
+                                <TextBlock Style="{StaticResource Dim}" Margin="0,0,0,10"
+                                           Text="Programas com vários processos (como navegadores) aparecem somados. Se algo que você nem está usando aparece no topo, feche-o: isso libera memória de verdade."/>
+                                <StackPanel x:Name="ProcList"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- ============ AJUSTES ============ -->
+                    <StackPanel x:Name="TweaksPanel" Visibility="Collapsed">
+                        <Border Style="{StaticResource Card}">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource PrimaryButton}" Margin="0,0,10,0" Click="OnApplyRecommended"
+                                            ToolTip="Liga todos os ajustes marcados como Recomendado para o seu PC.">
+                                        <TextBlock><Run FontFamily="Segoe MDL2 Assets" Text="&#xE73E;"/><Run Text="  Aplicar recomendados"/></TextBlock>
+                                    </Button>
+                                    <Button Style="{StaticResource GhostButton}" Click="OnRestoreAllTweaks"
+                                            ToolTip="Desfaz todos os ajustes feitos por este app, voltando aos valores originais.">
+                                        <TextBlock><Run FontFamily="Segoe MDL2 Assets" Text="&#xE7A7;"/><Run Text="  Restaurar tudo"/></TextBlock>
+                                    </Button>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,18,0">
+                                    <TextBlock x:Name="TweaksCount" Text="—" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
+                                    <Grid Height="8" Margin="0,8,0,6" MaxWidth="360" HorizontalAlignment="Left" Width="360">
+                                        <Border CornerRadius="4" Background="{DynamicResource Track}"/>
+                                        <Border x:Name="TweaksProgress" CornerRadius="4" Background="{DynamicResource Accent}" RenderTransformOrigin="0,0.5">
+                                            <Border.RenderTransform><ScaleTransform ScaleX="0"/></Border.RenderTransform>
+                                        </Border>
+                                    </Grid>
+                                    <TextBlock Style="{StaticResource Dim}" Text="Interruptor ligado = ajuste aplicado. Desligar ou clicar em Restaurar volta ao valor original."/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <ItemsControl x:Name="TweakGroups">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Header}" Style="{StaticResource SectionHeader}"/>
+                                        <ItemsControl ItemsSource="{Binding Items}" ItemTemplate="{StaticResource TweakTemplate}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <!-- ============ INICIALIZAÇÃO ============ -->
+                    <StackPanel x:Name="StartupPanel" Visibility="Collapsed">
+                        <Border Style="{StaticResource TipBox}">
+                            <TextBlock Style="{StaticResource Body}">
+                                <Run FontWeight="Bold">🚀 O que são programas de inicialização?</Run>
+                                <Run>São os programas que abrem sozinhos quando você liga o PC. Cada um deixa o Windows mais lento para ficar pronto e fica gastando memória e processador escondido perto do relógio. Desativar aqui</Run>
+                                <Run FontWeight="Bold">não desinstala nada</Run>
+                                <Run>: o programa só deixa de abrir sozinho, e você abre quando quiser. É o mesmo que a aba "Inicializar" do Gerenciador de Tarefas. A mudança vale a partir do próximo login.</Run>
+                            </TextBlock>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <Button Style="{StaticResource GhostButton}" Margin="0,0,10,0" Click="OnRefreshStartup">
+                                        <TextBlock><Run FontFamily="Segoe MDL2 Assets" Text="&#xE72C;"/><Run Text="  Atualizar lista"/></TextBlock>
+                                    </Button>
+                                    <Button Style="{StaticResource GhostButton}" Click="OnRestoreAllStartup"
+                                            ToolTip="Volta todos os programas que este app mudou ao estado original.">
+                                        <TextBlock><Run FontFamily="Segoe MDL2 Assets" Text="&#xE7A7;"/><Run Text="  Restaurar tudo"/></TextBlock>
+                                    </Button>
+                                </StackPanel>
+                                <StackPanel Margin="0,0,18,0">
+                                    <TextBlock x:Name="StartupCount" Text="Lendo a lista..." FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
+                                    <TextBlock Style="{StaticResource Dim}" Margin="0,4,0,0">
+                                        <Run Foreground="{DynamicResource Good}" FontWeight="SemiBold">Pode desativar</Run><Run Text=": apps que você mesmo abre.  "/>
+                                        <Run Foreground="{DynamicResource Warn}" FontWeight="SemiBold">Melhor manter</Run><Run Text=": antivírus e drivers.  "/>
+                                        <Run FontWeight="SemiBold">Decida você</Run><Run Text=": depende do seu uso."/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <ItemsControl x:Name="StartupList" ItemTemplate="{StaticResource StartupTemplate}"/>
+                        <TextBlock x:Name="StartupEmpty" Style="{StaticResource Dim}" Visibility="Collapsed" Margin="2,0,0,0"
+                                   Text="Nenhum programa abre sozinho com o Windows. Seu PC já está enxuto aqui! 🎉"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Aviso que sobe de baixo depois de cada ação -->
+        <Border x:Name="Toast" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,22" Padding="18,12"
+                CornerRadius="12" Background="{DynamicResource Card}" BorderBrush="{DynamicResource Accent}" BorderThickness="1"
+                MaxWidth="560" Visibility="Collapsed" IsHitTestVisible="False">
+            <Border.RenderTransform><TranslateTransform/></Border.RenderTransform>
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="24" ShadowDepth="4" Opacity="0.35"/>
+            </Border.Effect>
+            <TextBlock x:Name="ToastText" Style="{StaticResource Body}"/>
+        </Border>
+    </Grid>
+</UserControl>
