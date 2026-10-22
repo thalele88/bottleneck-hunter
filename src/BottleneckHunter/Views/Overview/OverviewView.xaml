@@ -1,0 +1,83 @@
+<UserControl x:Class="BottleneckHunter.Views.Overview.OverviewView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:BottleneckHunter.Controls">
+    <ScrollViewer>
+        <StackPanel Margin="32,8,18,28">
+            <TextBlock Text="Visão geral" Style="{StaticResource PageTitle}"/>
+            <TextBlock Style="{StaticResource PageSubtitle}"
+                       Text="Um resumo ao vivo do seu PC. Os medidores mostram quanto de cada peça está sendo usado agora."/>
+
+            <Border Style="{StaticResource TipBox}">
+                <TextBlock Style="{StaticResource Body}">
+                    <Run FontWeight="Bold">💡 O que é um gargalo?</Run>
+                    <Run>Imagine uma garrafa: não importa o tamanho dela, a água sai na velocidade do gargalo. No PC é igual: se o processador (CPU) não consegue preparar os quadros tão rápido quanto a placa de vídeo (GPU) desenha, a GPU fica esperando e o FPS trava. Abra o jogo e veja os medidores abaixo: a peça que fica perto de 100% é a que está segurando o resto.</Run>
+                </TextBlock>
+            </Border>
+
+            <!-- Medidores -->
+            <WrapPanel x:Name="Gauges">
+                <Border Style="{StaticResource Card}" ToolTip="Quanto do processador está ocupado. Se um único núcleo fica em 100%, o jogo pode estar limitado pela CPU mesmo com o total baixo.">
+                    <StackPanel>
+                        <TextBlock Text="PROCESSADOR (CPU)" Style="{StaticResource CardTitle}"/>
+                        <c:Gauge x:Name="CpuGauge" Label="uso"/>
+                        <TextBlock x:Name="CpuInfo" Style="{StaticResource Dim}" HorizontalAlignment="Center" Text="—"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}" ToolTip="Quanto da placa de vídeo está ocupada. Em jogos, o ideal é ficar acima de 95%: sinal de que a GPU está dando tudo.">
+                    <StackPanel>
+                        <TextBlock Text="PLACA DE VÍDEO (GPU)" Style="{StaticResource CardTitle}"/>
+                        <c:Gauge x:Name="GpuGauge" Label="uso" HighIsGood="True"/>
+                        <TextBlock x:Name="GpuInfo" Style="{StaticResource Dim}" HorizontalAlignment="Center" Text="—"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}" ToolTip="Memória RAM em uso. Acima de 90%, o Windows começa a usar o disco como memória e o jogo engasga.">
+                    <StackPanel>
+                        <TextBlock Text="MEMÓRIA (RAM)" Style="{StaticResource CardTitle}"/>
+                        <c:Gauge x:Name="RamGauge" Label="em uso"/>
+                        <TextBlock x:Name="RamInfo" Style="{StaticResource Dim}" HorizontalAlignment="Center" Text="—"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}" ToolTip="Memória da placa de vídeo. Quando enche, as texturas vão para a RAM, que é bem mais lenta, e aparecem travadas.">
+                    <StackPanel>
+                        <TextBlock Text="MEMÓRIA DE VÍDEO (VRAM)" Style="{StaticResource CardTitle}"/>
+                        <c:Gauge x:Name="VramGauge" Label="em uso"/>
+                        <TextBlock x:Name="VramInfo" Style="{StaticResource Dim}" HorizontalAlignment="Center" Text="—"/>
+                    </StackPanel>
+                </Border>
+            </WrapPanel>
+
+            <!-- Gráfico -->
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,8">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Ellipse Width="10" Height="10" Fill="{DynamicResource Cpu}" VerticalAlignment="Center"/>
+                            <TextBlock Text="CPU" Margin="6,0,14,0" Style="{StaticResource Dim}"/>
+                            <Ellipse Width="10" Height="10" Fill="{DynamicResource Gpu}" VerticalAlignment="Center"/>
+                            <TextBlock Text="GPU" Margin="6,0,0,0" Style="{StaticResource Dim}"/>
+                        </StackPanel>
+                        <TextBlock Text="USO NO ÚLTIMO MINUTO" Style="{StaticResource CardTitle}"/>
+                    </DockPanel>
+                    <c:LineChart x:Name="Chart" Height="190"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Veredito rápido -->
+            <Border Style="{StaticResource Card}">
+                <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="Caçar gargalos em detalhe →" Style="{StaticResource PrimaryButton}"
+                            VerticalAlignment="Center" Click="OnOpenBottleneck"/>
+                    <StackPanel>
+                        <TextBlock Text="LEITURA RÁPIDA" Style="{StaticResource CardTitle}"/>
+                        <TextBlock x:Name="Verdict" FontSize="18" FontWeight="SemiBold" Foreground="{DynamicResource Text}" Text="Lendo sensores..."/>
+                        <TextBlock x:Name="VerdictHint" Style="{StaticResource Dim}" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <TextBlock x:Name="SensorWarning" Style="{StaticResource Dim}" Foreground="{DynamicResource Warn}" Visibility="Collapsed" Margin="0,0,14,0"
+                       Text="Não foi possível ler a temperatura da CPU. Instale o driver PawnIO (comando: winget install namazso.PawnIO) e abra o app de novo."/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

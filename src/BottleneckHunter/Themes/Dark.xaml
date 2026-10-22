@@ -1,0 +1,20 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Paleta escura: fundo grafite, destaque laranja "caçador" -->
+    <SolidColorBrush x:Key="Bg" Color="#0E0F12"/>
+    <SolidColorBrush x:Key="Sidebar" Color="#14161B"/>
+    <SolidColorBrush x:Key="Card" Color="#1A1D23"/>
+    <SolidColorBrush x:Key="CardHover" Color="#22262E"/>
+    <SolidColorBrush x:Key="Border" Color="#2A2F38"/>
+    <SolidColorBrush x:Key="Text" Color="#F2F3F5"/>
+    <SolidColorBrush x:Key="TextDim" Color="#9AA1AD"/>
+    <SolidColorBrush x:Key="Accent" Color="#FF7A1A"/>
+    <SolidColorBrush x:Key="AccentSoft" Color="#33FF7A1A"/>
+    <SolidColorBrush x:Key="Good" Color="#3DDC84"/>
+    <SolidColorBrush x:Key="Warn" Color="#FFC93C"/>
+    <SolidColorBrush x:Key="Bad" Color="#FF5470"/>
+    <SolidColorBrush x:Key="Cpu" Color="#4EA8FF"/>
+    <SolidColorBrush x:Key="Gpu" Color="#3DDC84"/>
+    <SolidColorBrush x:Key="Track" Color="#262A32"/>
+    <Color x:Key="AccentColor">#FF7A1A</Color>
+</ResourceDictionary>

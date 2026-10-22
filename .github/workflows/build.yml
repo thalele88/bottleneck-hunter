@@ -1,0 +1,46 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      # Pasta com o .exe e as DLLs ao lado (sem extrair nada para %TEMP%, que qualquer usuário pode alterar).
+      - name: Publicar
+        run: dotnet publish src/BottleneckHunter/BottleneckHunter.csproj -c Release -r win-x64 --self-contained true -o dist/BottleneckHunter
+
+      - name: Compactar
+        shell: pwsh
+        run: Compress-Archive -Path dist/BottleneckHunter/* -DestinationPath dist/BottleneckHunter-win-x64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BottleneckHunter-win-x64
+          path: dist/BottleneckHunter-win-x64.zip
+
+      # A cada push na main, atualiza a release "latest" para baixar sem compilar.
+      - name: Atualizar release latest
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete latest --yes --cleanup-tag || true
+          gh release create latest dist/BottleneckHunter-win-x64.zip \
+            --title "Bottleneck Hunter (última versão)" \
+            --notes "Gerado automaticamente a partir do commit ${GITHUB_SHA::7}. Baixe o .zip, extraia e abra BottleneckHunter.exe." \
+            --prerelease
