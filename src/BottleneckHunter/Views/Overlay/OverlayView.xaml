@@ -160,7 +160,7 @@
                                     <Ellipse.Effect><BlurEffect Radius="60"/></Ellipse.Effect>
                                     <Ellipse.RenderTransform><TranslateTransform/></Ellipse.RenderTransform>
                                 </Ellipse>
-                                <Path Fill="{DynamicResource Card}" Opacity="0.85" VerticalAlignment="Bottom" Stretch="Fill" Height="80"
+                                <Path Fill="{DynamicResource CardBg}" Opacity="0.85" VerticalAlignment="Bottom" Stretch="Fill" Height="80"
                                       Data="M0,80 L0,50 L60,20 L110,45 L180,5 L250,40 L310,15 L380,50 L460,25 L460,80 Z"/>
                                 <TextBlock Text="+" FontSize="22" Foreground="{DynamicResource Text}" Opacity="0.6"
                                            HorizontalAlignment="Center" VerticalAlignment="Center"/>

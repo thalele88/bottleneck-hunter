@@ -38,7 +38,7 @@
 
     <!-- Cartão com leve elevação ao passar o mouse -->
     <Style x:Key="Card" TargetType="Border">
-        <Setter Property="Background" Value="{DynamicResource Card}"/>
+        <Setter Property="Background" Value="{DynamicResource CardBg}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource Border}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="CornerRadius" Value="14"/>
@@ -279,7 +279,7 @@
     </Style>
 
     <Style TargetType="ToolTip">
-        <Setter Property="Background" Value="{DynamicResource Card}"/>
+        <Setter Property="Background" Value="{DynamicResource CardBg}"/>
         <Setter Property="Foreground" Value="{DynamicResource Text}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource Border}"/>
         <Setter Property="Padding" Value="10,6"/>

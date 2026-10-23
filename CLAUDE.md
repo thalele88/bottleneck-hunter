@@ -6,7 +6,7 @@ Escrito do zero, com código próprio. Inspirado no conjunto de funções do Res
 ## Regras gerais
 - **Tudo que o usuário vê é em português do Brasil**, em linguagem simples e didática: cada tela explica o que mostra e o que fazer.
 - Animações suaves (200–600 ms, CubicEase/BackEase), sem exagero. Siga os estilos de `Themes/Styles.xaml`.
-- Cores sempre por `DynamicResource` (o tema claro/escuro troca em tempo real). Chaves: `Bg Sidebar Card CardHover Border Text TextDim Accent AccentSoft Good Warn Bad Cpu Gpu Track`.
+- Cores sempre por `DynamicResource` (o tema claro/escuro troca em tempo real). Chaves: `Bg Sidebar CardBg CardHover Border Text TextDim Accent AccentSoft Good Warn Bad Cpu Gpu Track`.
 - O app roda como administrador. Trate arquivos lidos do disco como não confiáveis (use `JsonStore`), carregue DLLs nativas só por caminho absoluto confiável e não extraia nada para `%TEMP%`.
 - Todo ajuste que muda o Windows precisa de um botão **Restaurar** que volta ao valor original.
 

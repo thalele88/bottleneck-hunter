@@ -17,7 +17,7 @@
                     <ControlTemplate TargetType="RadioButton">
                         <Grid>
                             <Border x:Name="B" CornerRadius="14" Padding="16,14" BorderThickness="1"
-                                    Background="{DynamicResource Card}" BorderBrush="{DynamicResource Border}">
+                                    Background="{DynamicResource CardBg}" BorderBrush="{DynamicResource Border}">
                                 <ContentPresenter/>
                             </Border>
                             <Border x:Name="Line" Height="3" CornerRadius="2" VerticalAlignment="Bottom" Margin="16,0,16,0"
@@ -436,7 +436,7 @@
 
         <!-- Aviso que sobe de baixo depois de cada ação -->
         <Border x:Name="Toast" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,22" Padding="18,12"
-                CornerRadius="12" Background="{DynamicResource Card}" BorderBrush="{DynamicResource Accent}" BorderThickness="1"
+                CornerRadius="12" Background="{DynamicResource CardBg}" BorderBrush="{DynamicResource Accent}" BorderThickness="1"
                 MaxWidth="560" Visibility="Collapsed" IsHitTestVisible="False">
             <Border.RenderTransform><TranslateTransform/></Border.RenderTransform>
             <Border.Effect>
