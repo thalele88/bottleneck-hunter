@@ -34,7 +34,7 @@
                 </StackPanel>
 
                 <!-- Rodapé: leitura ao vivo -->
-                <Border DockPanel.Dock="Bottom" Margin="14" Padding="14,12" CornerRadius="12" Background="{DynamicResource Card}"
+                <Border DockPanel.Dock="Bottom" Margin="14" Padding="14,12" CornerRadius="12" Background="{DynamicResource CardBg}"
                         BorderBrush="{DynamicResource Border}" BorderThickness="1">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">

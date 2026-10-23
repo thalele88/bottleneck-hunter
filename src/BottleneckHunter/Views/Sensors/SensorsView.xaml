@@ -16,7 +16,7 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TextBox">
-                        <Border x:Name="B" CornerRadius="10" Background="{DynamicResource Card}" BorderBrush="{DynamicResource Border}"
+                        <Border x:Name="B" CornerRadius="10" Background="{DynamicResource CardBg}" BorderBrush="{DynamicResource Border}"
                                 BorderThickness="1" Padding="12,0,34,0">
                             <DockPanel>
                                 <TextBlock DockPanel.Dock="Left" FontFamily="Segoe MDL2 Assets" Text="&#xE721;" FontSize="13"
@@ -112,7 +112,7 @@
 
         <!-- Cartão de peça: sem o "pulo" do Card comum, porque é grande -->
         <Style x:Key="GroupCard" TargetType="Border">
-            <Setter Property="Background" Value="{DynamicResource Card}"/>
+            <Setter Property="Background" Value="{DynamicResource CardBg}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource Border}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="14"/>
@@ -297,7 +297,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="GuideTemplate" DataType="{x:Type local:GuideItem}">
-            <Border Width="250" Margin="0,0,12,12" Padding="12,10" CornerRadius="10" Background="{DynamicResource Card}"
+            <Border Width="250" Margin="0,0,12,12" Padding="12,10" CornerRadius="10" Background="{DynamicResource CardBg}"
                     BorderBrush="{DynamicResource Border}" BorderThickness="1">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal">

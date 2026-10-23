@@ -20,6 +20,10 @@ jobs:
           dotnet-version: 8.0.x
 
       # Pasta com o .exe e as DLLs ao lado (sem extrair nada para %TEMP%, que qualquer usuário pode alterar).
+      # Uma chave de cor repetida como Style só quebra quando o app abre; pega isso antes.
+      - name: Conferir chaves de recurso
+        run: python tools/check-resource-keys.py
+
       - name: Publicar
         run: dotnet publish src/BottleneckHunter/BottleneckHunter.csproj -c Release -r win-x64 --self-contained true -o dist/BottleneckHunter
 

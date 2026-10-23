@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <SolidColorBrush x:Key="Bg" Color="#F4F5F7"/>
     <SolidColorBrush x:Key="Sidebar" Color="#FFFFFF"/>
-    <SolidColorBrush x:Key="Card" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="CardBg" Color="#FFFFFF"/>
     <SolidColorBrush x:Key="CardHover" Color="#F0F1F4"/>
     <SolidColorBrush x:Key="Border" Color="#E1E4EA"/>
     <SolidColorBrush x:Key="Text" Color="#16181D"/>
