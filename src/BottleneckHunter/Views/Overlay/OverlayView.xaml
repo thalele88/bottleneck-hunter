@@ -1,0 +1,377 @@
+<UserControl x:Class="BottleneckHunter.Views.Overlay.OverlayView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:BottleneckHunter.Views.Overlay">
+    <UserControl.Resources>
+        <!-- Tecla desenhada, para mostrar o atalho -->
+        <Style x:Key="KeyCap" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Track}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Border}"/>
+            <Setter Property="BorderThickness" Value="1,1,1,3"/>
+            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="Padding" Value="9,3"/>
+            <Setter Property="Margin" Value="0,0,4,0"/>
+        </Style>
+        <Style x:Key="KeyText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+        </Style>
+        <Style x:Key="Plus" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
+            <Setter Property="Margin" Value="2,0,6,0"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Cada opção de "O que mostrar" -->
+        <Style x:Key="Option" TargetType="Border">
+            <Setter Property="Width" Value="258"/>
+            <Setter Property="Padding" Value="14,11"/>
+            <Setter Property="Margin" Value="0,0,10,10"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="Background" Value="{DynamicResource Bg}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource Border}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+        </Style>
+        <Style x:Key="OptionTitle" TargetType="TextBlock" BasedOn="{StaticResource Body}">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+        <Style x:Key="OptionDesc" TargetType="TextBlock" BasedOn="{StaticResource Dim}">
+            <Setter Property="FontSize" Value="11.5"/>
+            <Setter Property="Margin" Value="0,2,10,0"/>
+        </Style>
+        <Style x:Key="Group" TargetType="TextBlock" BasedOn="{StaticResource CardTitle}">
+            <Setter Property="Margin" Value="0,14,0,6"/>
+        </Style>
+        <Style x:Key="StatLabel" TargetType="TextBlock" BasedOn="{StaticResource CardTitle}">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Margin" Value="0,0,0,2"/>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer>
+        <StackPanel Margin="32,8,18,28" x:Name="Root">
+            <TextBlock Text="Overlay de jogos" Style="{StaticResource PageTitle}"/>
+            <TextBlock Style="{StaticResource PageSubtitle}"
+                       Text="Mostra FPS, frametime e o uso de CPU e GPU num cantinho da tela, por cima do jogo, no estilo do RivaTuner. Ligue aqui ou aperte Ctrl + Shift + O a qualquer momento, até dentro do jogo."/>
+
+            <Border Style="{StaticResource TipBox}">
+                <TextBlock Style="{StaticResource Body}">
+                    <Run FontWeight="Bold">💡 Como funciona?</Run>
+                    <Run>O overlay é uma janelinha transparente que fica sempre por cima de tudo. Os cliques passam direto por ela, então ela não atrapalha o jogo.</Run>
+                    <Run>O FPS é contado pelos avisos que o próprio Windows registra a cada quadro desenhado (a mesma técnica do PresentMon). Nada é injetado no jogo, por isso é seguro com anti-cheat.</Run>
+                    <LineBreak/>
+                    <Run FontWeight="Bold">Importante:</Run>
+                    <Run>no jogo, use o modo de tela</Run>
+                    <Run FontWeight="SemiBold">"Janela sem bordas"</Run>
+                    <Run>(borderless). Em "Tela cheia exclusiva" o Windows entrega a tela inteira para o jogo e nenhuma janela consegue ficar por cima.</Run>
+                </TextBlock>
+            </Border>
+
+            <!-- Liga/desliga + números ao vivo -->
+            <WrapPanel x:Name="TopCards">
+                <Border Style="{StaticResource Card}" Width="330" VerticalAlignment="Stretch">
+                    <StackPanel>
+                        <TextBlock Text="OVERLAY" Style="{StaticResource CardTitle}"/>
+                        <DockPanel>
+                            <CheckBox x:Name="EnabledSwitch" DockPanel.Dock="Right" Style="{StaticResource Switch}" VerticalAlignment="Center"
+                                      Click="OnEnabledClick" ToolTip="Liga ou desliga o overlay por cima dos jogos.">
+                                <CheckBox.LayoutTransform><ScaleTransform ScaleX="1.25" ScaleY="1.25"/></CheckBox.LayoutTransform>
+                            </CheckBox>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <Ellipse x:Name="StatusDot" Width="10" Height="10" Fill="{DynamicResource TextDim}" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="StatusText" Text="Desligado" FontSize="20" FontWeight="Bold" Margin="10,0,0,0"
+                                           Foreground="{DynamicResource Text}"/>
+                            </StackPanel>
+                        </DockPanel>
+
+                        <TextBlock Text="Atalho em qualquer lugar" Style="{StaticResource Dim}" Margin="0,16,0,6"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Border Style="{StaticResource KeyCap}"><TextBlock Text="Ctrl" Style="{StaticResource KeyText}"/></Border>
+                            <TextBlock Text="+" Style="{StaticResource Plus}"/>
+                            <Border Style="{StaticResource KeyCap}"><TextBlock Text="Shift" Style="{StaticResource KeyText}"/></Border>
+                            <TextBlock Text="+" Style="{StaticResource Plus}"/>
+                            <Border Style="{StaticResource KeyCap}"><TextBlock Text="O" Style="{StaticResource KeyText}"/></Border>
+                        </StackPanel>
+                        <TextBlock x:Name="HotkeyWarning" Style="{StaticResource Dim}" Foreground="{DynamicResource Warn}" Margin="0,8,0,0" Visibility="Collapsed"/>
+
+                        <DockPanel Margin="0,16,0,0">
+                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" VerticalAlignment="Center"
+                                      IsChecked="{Binding StartWithApp}" Click="OnOptionClick"/>
+                            <StackPanel>
+                                <TextBlock Text="Ligar junto com o app" Style="{StaticResource OptionTitle}"/>
+                                <TextBlock Text="O overlay já aparece quando o Bottleneck Hunter abre." Style="{StaticResource OptionDesc}"/>
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource Card}" MinWidth="420">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock x:Name="GameText" DockPanel.Dock="Right" Style="{StaticResource Dim}" MaxWidth="260" TextTrimming="CharacterEllipsis"
+                                       ToolTip="O overlay mede o programa que está em primeiro plano (o jogo que você está jogando)."/>
+                            <TextBlock Text="AGORA" Style="{StaticResource CardTitle}"/>
+                        </DockPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <StackPanel Margin="0,0,30,0" ToolTip="Quadros por segundo: quantas imagens o jogo desenhou no último segundo.">
+                                <TextBlock Text="FPS" Style="{StaticResource StatLabel}"/>
+                                <TextBlock x:Name="FpsValue" Text="—" Style="{StaticResource BigValue}" Foreground="{DynamicResource Accent}"/>
+                            </StackPanel>
+                            <StackPanel Margin="0,0,30,0" ToolTip="A média dos 1% piores quadros dos últimos 10 segundos. Se ficar muito abaixo do FPS, o jogo está engasgando.">
+                                <TextBlock Text="1% LOW" Style="{StaticResource StatLabel}"/>
+                                <TextBlock x:Name="LowValue" Text="—" Style="{StaticResource BigValue}"/>
+                            </StackPanel>
+                            <StackPanel ToolTip="Quanto tempo, em média, cada quadro leva para ficar pronto. 16,7 ms = 60 FPS.">
+                                <TextBlock Text="FRAMETIME" Style="{StaticResource StatLabel}"/>
+                                <TextBlock Style="{StaticResource BigValue}">
+                                    <Run x:Name="FtValue" Text="—"/><Run Text=" ms" FontSize="15" Foreground="{DynamicResource TextDim}"/>
+                                </TextBlock>
+                            </StackPanel>
+                        </StackPanel>
+                        <local:FrametimeGraph x:Name="LiveGraph" Height="56" Margin="0,12,0,4" Capacity="240"
+                                              Stroke="{DynamicResource Accent}" Spike="{DynamicResource Bad}" Guide="{DynamicResource Border}"/>
+                        <TextBlock x:Name="LiveHint" Style="{StaticResource Dim}" FontSize="11.5"
+                                   Text="Abra um jogo e volte aqui com Alt+Tab, ou ligue o overlay para ver tudo dentro do jogo."/>
+                    </StackPanel>
+                </Border>
+            </WrapPanel>
+
+            <!-- Pré-visualização + aparência -->
+            <Border Style="{StaticResource Card}" x:Name="LookCard">
+                <WrapPanel>
+                    <StackPanel Margin="0,0,28,0">
+                        <TextBlock Text="PRÉ-VISUALIZAÇÃO" Style="{StaticResource CardTitle}"/>
+                        <Border Width="460" Height="259" CornerRadius="12" ClipToBounds="True" BorderBrush="{DynamicResource Border}" BorderThickness="1">
+                            <Grid x:Name="Scene" ClipToBounds="True" Background="{DynamicResource Track}">
+                                <!-- Uma "cena de jogo" abstrata, com manchas de luz que se movem devagar -->
+                                <Ellipse x:Name="Blob1" Width="260" Height="200" Fill="{DynamicResource Accent}" Opacity="0.35"
+                                         HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-40,-50,0,0">
+                                    <Ellipse.Effect><BlurEffect Radius="70"/></Ellipse.Effect>
+                                    <Ellipse.RenderTransform><TranslateTransform/></Ellipse.RenderTransform>
+                                </Ellipse>
+                                <Ellipse x:Name="Blob2" Width="240" Height="220" Fill="{DynamicResource Cpu}" Opacity="0.3"
+                                         HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-30,-60">
+                                    <Ellipse.Effect><BlurEffect Radius="70"/></Ellipse.Effect>
+                                    <Ellipse.RenderTransform><TranslateTransform/></Ellipse.RenderTransform>
+                                </Ellipse>
+                                <Ellipse x:Name="Blob3" Width="200" Height="160" Fill="{DynamicResource Gpu}" Opacity="0.25"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" Margin="80,40,0,0">
+                                    <Ellipse.Effect><BlurEffect Radius="60"/></Ellipse.Effect>
+                                    <Ellipse.RenderTransform><TranslateTransform/></Ellipse.RenderTransform>
+                                </Ellipse>
+                                <Path Fill="{DynamicResource Card}" Opacity="0.85" VerticalAlignment="Bottom" Stretch="Fill" Height="80"
+                                      Data="M0,80 L0,50 L60,20 L110,45 L180,5 L250,40 L310,15 L380,50 L460,25 L460,80 Z"/>
+                                <TextBlock Text="+" FontSize="22" Foreground="{DynamicResource Text}" Opacity="0.6"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                <Canvas x:Name="PreviewCanvas">
+                                    <Border x:Name="PreviewHost" Canvas.Left="10" Canvas.Top="10">
+                                        <local:OverlayPanel x:Name="Preview">
+                                            <local:OverlayPanel.LayoutTransform><ScaleTransform ScaleX="0.8" ScaleY="0.8"/></local:OverlayPanel.LayoutTransform>
+                                        </local:OverlayPanel>
+                                    </Border>
+                                </Canvas>
+                            </Grid>
+                        </Border>
+                        <TextBlock Text="Assim o overlay aparece por cima do jogo (em tamanho reduzido)." Style="{StaticResource Dim}" FontSize="11.5" Margin="0,8,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Width="300">
+                        <TextBlock Text="POSIÇÃO NA TELA" Style="{StaticResource CardTitle}"/>
+                        <UniformGrid Columns="2" x:Name="CornerButtons">
+                            <RadioButton GroupName="corner" Style="{StaticResource Segment}" Tag="TopLeft" Content="↖ Superior esquerdo" Margin="0,0,6,6" Checked="OnCornerChecked"/>
+                            <RadioButton GroupName="corner" Style="{StaticResource Segment}" Tag="TopRight" Content="↗ Superior direito" Margin="0,0,6,6" Checked="OnCornerChecked"/>
+                            <RadioButton GroupName="corner" Style="{StaticResource Segment}" Tag="BottomLeft" Content="↙ Inferior esquerdo" Margin="0,0,6,6" Checked="OnCornerChecked"/>
+                            <RadioButton GroupName="corner" Style="{StaticResource Segment}" Tag="BottomRight" Content="↘ Inferior direito" Margin="0,0,6,6" Checked="OnCornerChecked"/>
+                        </UniformGrid>
+
+                        <TextBlock Text="TAMANHO" Style="{StaticResource Group}"/>
+                        <StackPanel Orientation="Horizontal" x:Name="SizeButtons">
+                            <RadioButton GroupName="size" Style="{StaticResource Segment}" Tag="0" Content="Pequeno" Checked="OnSizeChecked"/>
+                            <RadioButton GroupName="size" Style="{StaticResource Segment}" Tag="1" Content="Médio" Checked="OnSizeChecked"/>
+                            <RadioButton GroupName="size" Style="{StaticResource Segment}" Tag="2" Content="Grande" Checked="OnSizeChecked"/>
+                        </StackPanel>
+
+                        <TextBlock Text="ESTILO" Style="{StaticResource Group}"/>
+                        <StackPanel Orientation="Horizontal" x:Name="StyleButtons">
+                            <RadioButton GroupName="style" Style="{StaticResource Segment}" Tag="list" Content="Lista" Checked="OnStyleChecked"
+                                         ToolTip="Uma informação por linha, como no RivaTuner."/>
+                            <RadioButton GroupName="style" Style="{StaticResource Segment}" Tag="compact" Content="Linha única" Checked="OnStyleChecked"
+                                         ToolTip="Tudo numa faixa só: ocupa menos espaço na tela."/>
+                        </StackPanel>
+
+                        <TextBlock Text="FUNDO" Style="{StaticResource Group}"/>
+                        <StackPanel Orientation="Horizontal" x:Name="BgButtons">
+                            <RadioButton GroupName="bg" Style="{StaticResource Segment}" Tag="0" Content="Sem fundo" Checked="OnBgChecked"/>
+                            <RadioButton GroupName="bg" Style="{StaticResource Segment}" Tag="0.35" Content="Leve" Checked="OnBgChecked"/>
+                            <RadioButton GroupName="bg" Style="{StaticResource Segment}" Tag="0.55" Content="Médio" Checked="OnBgChecked"/>
+                            <RadioButton GroupName="bg" Style="{StaticResource Segment}" Tag="0.8" Content="Escuro" Checked="OnBgChecked"/>
+                        </StackPanel>
+                        <TextBlock Text="Fundo mais escuro deixa os números legíveis em cenas claras do jogo." Style="{StaticResource OptionDesc}" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </WrapPanel>
+            </Border>
+
+            <!-- O que mostrar -->
+            <Border Style="{StaticResource Card}" x:Name="ItemsCard">
+                <StackPanel>
+                    <TextBlock Text="O QUE MOSTRAR" Style="{StaticResource CardTitle}"/>
+                    <TextBlock Text="Escolha as informações do overlay. Passe o mouse em cada uma para saber mais." Style="{StaticResource Dim}" Margin="0,0,0,12"/>
+                    <WrapPanel x:Name="Options">
+                        <Border Style="{StaticResource Option}" ToolTip="Frames per second. Acima de 60 já é fluido; monitores de 144 Hz pedem 144 FPS para aproveitar tudo.">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ShowFps}" Click="OnOptionClick" VerticalAlignment="Center"/>
+                                <StackPanel>
+                                    <TextBlock Text="FPS" Style="{StaticResource OptionTitle}"/>
+                                    <TextBlock Text="Quadros por segundo. Mais = mais fluido." Style="{StaticResource OptionDesc}"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Option}" ToolTip="O tempo que cada quadro leva para ficar pronto. 16,7 ms = 60 FPS; 6,9 ms = 144 FPS.">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ShowFrametime}" Click="OnOptionClick" VerticalAlignment="Center"/>
+                                <StackPanel>
+                                    <TextBlock Text="Frametime" Style="{StaticResource OptionTitle}"/>
+                                    <TextBlock Text="Tempo de cada quadro, em ms." Style="{StaticResource OptionDesc}"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Option}" ToolTip="O FPS médio pode esconder travadinhas. O 1% low é a média dos 1% piores quadros: quanto mais perto do FPS médio, mais liso está o jogo.">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ShowLows}" Click="OnOptionClick" VerticalAlignment="Center"/>
+                                <StackPanel>
+                                    <TextBlock Text="1% e 0,1% low" Style="{StaticResource OptionTitle}"/>
+                                    <TextBlock Text="Os piores quadros: mostram os engasgos." Style="{StaticResource OptionDesc}"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Option}" ToolTip="Cada ponto é um quadro. Linha reta = jogo liso. Picos vermelhos = quadros que demoraram mais que o dobro do normal (stutter).">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ShowGraph}" Click="OnOptionClick" VerticalAlignment="Center"/>
+                                <StackPanel>
+                                    <TextBlock Text="Gráfico de frametime" Style="{StaticResource OptionTitle}"/>
+                                    <TextBlock Text="Picos vermelhos = travadinhas." Style="{StaticResource OptionDesc}"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Option}" ToolTip="Em jogo, o ideal é a GPU ficar acima de 95%. Se ela fica bem abaixo e o FPS está baixo, algo está segurando: geralmente a CPU.">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ShowGpu}" Click="OnOptionClick" VerticalAlignment="Center"/>
+                                <StackPanel>
+                                    <TextBlock Text="Uso da GPU" Style="{StaticResource OptionTitle}"/>
+                                    <TextBlock Text="Perto de 100% em jogo é o ideal." Style="{StaticResource OptionDesc}"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Option}" ToolTip="Fica amarelo a partir de 80 °C e vermelho a partir de 87 °C. Acima disso a placa pode reduzir o clock para se proteger.">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ShowGpuTemp}" Click="OnOptionClick" VerticalAlignment="Center"/>
+                                <StackPanel>
+                                    <TextBlock Text="Temperatura da GPU" Style="{StaticResource OptionTitle}"/>
+                                    <TextBlock Text="Muda de cor quando esquenta." Style="{StaticResource OptionDesc}"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Option}" ToolTip="Quantos watts a placa de vídeo está puxando agora. Útil para conferir se a fonte dá conta.">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ShowGpuPower}" Click="OnOptionClick" VerticalAlignment="Center"/>
+                                <StackPanel>
+                                    <TextBlock Text="Consumo da GPU" Style="{StaticResource OptionTitle}"/>
+                                    <TextBlock Text="Em watts (W)." Style="{StaticResource OptionDesc}"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Option}" ToolTip="Uso total do processador. Atenção: um jogo pode estar limitado por um único núcleo em 100% mesmo com o total baixo.">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ShowCpu}" Click="OnOptionClick" VerticalAlignment="Center"/>
+                                <StackPanel>
+                                    <TextBlock Text="Uso da CPU" Style="{StaticResource OptionTitle}"/>
+                                    <TextBlock Text="Quanto o processador trabalha." Style="{StaticResource OptionDesc}"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Option}" ToolTip="Fica amarelo a partir de 80 °C e vermelho a partir de 90 °C. Se não aparecer, instale o driver PawnIO (veja a Visão geral).">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ShowCpuTemp}" Click="OnOptionClick" VerticalAlignment="Center"/>
+                                <StackPanel>
+                                    <TextBlock Text="Temperatura da CPU" Style="{StaticResource OptionTitle}"/>
+                                    <TextBlock Text="Muda de cor quando esquenta." Style="{StaticResource OptionDesc}"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Option}" ToolTip="Memória RAM ocupada no PC todo. Perto do total, o Windows usa o disco como memória e o jogo engasga.">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ShowRam}" Click="OnOptionClick" VerticalAlignment="Center"/>
+                                <StackPanel>
+                                    <TextBlock Text="RAM em uso" Style="{StaticResource OptionTitle}"/>
+                                    <TextBlock Text="Em GB." Style="{StaticResource OptionDesc}"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Option}" ToolTip="Memória da placa de vídeo. Se encher, abaixe a qualidade das texturas no jogo.">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ShowVram}" Click="OnOptionClick" VerticalAlignment="Center"/>
+                                <StackPanel>
+                                    <TextBlock Text="VRAM em uso" Style="{StaticResource OptionTitle}"/>
+                                    <TextBlock Text="Memória da placa de vídeo, em GB." Style="{StaticResource OptionDesc}"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Option}" ToolTip="O título da janela que está em primeiro plano. Útil em gravações e prints.">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ShowGame}" Click="OnOptionClick" VerticalAlignment="Center"/>
+                                <StackPanel>
+                                    <TextBlock Text="Nome do jogo" Style="{StaticResource OptionTitle}"/>
+                                    <TextBlock Text="Qual programa está sendo medido." Style="{StaticResource OptionDesc}"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border Style="{StaticResource Option}" ToolTip="Mostra a hora atual, para não perder a noção do tempo jogando.">
+                            <DockPanel>
+                                <CheckBox DockPanel.Dock="Right" Style="{StaticResource Switch}" IsChecked="{Binding ShowClock}" Click="OnOptionClick" VerticalAlignment="Center"/>
+                                <StackPanel>
+                                    <TextBlock Text="Relógio" Style="{StaticResource OptionTitle}"/>
+                                    <TextBlock Text="A hora atual." Style="{StaticResource OptionDesc}"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Como ler -->
+            <Border Style="{StaticResource Card}" x:Name="LearnCard">
+                <StackPanel>
+                    <TextBlock Text="COMO LER OS NÚMEROS" Style="{StaticResource CardTitle}"/>
+                    <WrapPanel>
+                        <StackPanel Width="250" Margin="0,0,24,10">
+                            <TextBlock Text="🎞 FPS" Style="{StaticResource OptionTitle}" Margin="0,0,0,4"/>
+                            <TextBlock Style="{StaticResource Dim}" Text="Quantas imagens o jogo mostra por segundo. 30 é jogável, 60 é fluido e, com monitor de 144 Hz, o ideal é chegar perto de 144."/>
+                        </StackPanel>
+                        <StackPanel Width="250" Margin="0,0,24,10">
+                            <TextBlock Text="⏱ Frametime" Style="{StaticResource OptionTitle}" Margin="0,0,0,4"/>
+                            <TextBlock Style="{StaticResource Dim}" Text="O outro lado do FPS: quanto tempo cada imagem leva. O que você sente como travada é um quadro que demorou muito mais que os outros, mesmo com FPS alto."/>
+                        </StackPanel>
+                        <StackPanel Width="250" Margin="0,0,24,10">
+                            <TextBlock Text="📉 1% low" Style="{StaticResource OptionTitle}" Margin="0,0,0,4"/>
+                            <TextBlock Style="{StaticResource Dim}" Text="A média dos piores momentos. FPS 120 com 1% low 100 é liso; FPS 120 com 1% low 40 é cheio de engasgos (falta de RAM, CPU no limite ou shaders compilando)."/>
+                        </StackPanel>
+                        <StackPanel Width="250" Margin="0,0,24,10">
+                            <TextBlock Text="🔎 Achou o gargalo?" Style="{StaticResource OptionTitle}" Margin="0,0,0,4"/>
+                            <TextBlock Style="{StaticResource Dim}" Text="GPU abaixo de 90% com FPS baixo costuma ser CPU segurando. GPU em 99% significa que ela é o limite, o que é normal em jogos."/>
+                            <Button Content="Caçar gargalos em detalhe →" Style="{StaticResource GhostButton}" HorizontalAlignment="Left"
+                                    Margin="0,10,0,0" Padding="14,7" Click="OnOpenBottleneck"/>
+                        </StackPanel>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <DockPanel Margin="0,4,14,0">
+                <Button DockPanel.Dock="Left" Content="Restaurar padrão" Style="{StaticResource GhostButton}" Click="OnReset"
+                        ToolTip="Volta todas as opções do overlay como eram na primeira vez."/>
+                <TextBlock Text="O overlay não muda nada no Windows: as opções ficam só neste app." Style="{StaticResource Dim}"
+                           VerticalAlignment="Center" Margin="14,0,0,0"/>
+            </DockPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
