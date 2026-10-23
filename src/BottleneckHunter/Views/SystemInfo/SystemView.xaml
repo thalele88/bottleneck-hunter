@@ -1,0 +1,461 @@
+<UserControl x:Class="BottleneckHunter.Views.SystemInfo.SystemView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:BottleneckHunter.Views.SystemInfo">
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <!-- Cor por nível (Good/Warn/Bad/Info) -->
+        <Style x:Key="LevelFill" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Level}" Value="Good"><Setter Property="Background" Value="{DynamicResource Good}"/></DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="Warn"><Setter Property="Background" Value="{DynamicResource Warn}"/></DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="Bad"><Setter Property="Background" Value="{DynamicResource Bad}"/></DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="Info"><Setter Property="Background" Value="{DynamicResource Cpu}"/></DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="LevelText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Level}" Value="Good"><Setter Property="Foreground" Value="{DynamicResource Good}"/></DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="Warn"><Setter Property="Foreground" Value="{DynamicResource Warn}"/></DataTrigger>
+                <DataTrigger Binding="{Binding Level}" Value="Bad"><Setter Property="Foreground" Value="{DynamicResource Bad}"/></DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Selo com a sigla da peça (CPU, GPU, RAM...) -->
+        <Style x:Key="PartBadge" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource AccentSoft}"/>
+            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="MinWidth" Value="44"/>
+            <Setter Property="Height" Value="44"/>
+            <Setter Property="Padding" Value="6,0"/>
+            <Setter Property="Margin" Value="0,0,14,0"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+        </Style>
+        <Style x:Key="PartBadgeText" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Link "O que é isso?" que abre a explicação -->
+        <Style x:Key="ExplainToggle" TargetType="ToggleButton">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="HorizontalAlignment" Value="Left"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <StackPanel Orientation="Horizontal" Background="Transparent">
+                            <TextBlock x:Name="Arrow" Text="▸" Margin="0,0,6,0" RenderTransformOrigin="0.5,0.5">
+                                <TextBlock.RenderTransform><RotateTransform/></TextBlock.RenderTransform>
+                            </TextBlock>
+                            <ContentPresenter/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.8"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard><Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Arrow" Storyboard.TargetProperty="RenderTransform.(RotateTransform.Angle)" To="90" Duration="0:0:0.2">
+                                            <DoubleAnimation.EasingFunction><CubicEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+                                        </DoubleAnimation>
+                                    </Storyboard></BeginStoryboard>
+                                </Trigger.EnterActions>
+                                <Trigger.ExitActions>
+                                    <BeginStoryboard><Storyboard>
+                                        <DoubleAnimation Storyboard.TargetName="Arrow" Storyboard.TargetProperty="RenderTransform.(RotateTransform.Angle)" To="0" Duration="0:0:0.2"/>
+                                    </Storyboard></BeginStoryboard>
+                                </Trigger.ExitActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Linha "rótulo: valor" -->
+        <DataTemplate x:Key="RowTemplate">
+            <Grid Margin="0,3" Background="Transparent" ToolTip="{Binding Hint}" ToolTipService.InitialShowDelay="250">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="170"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{Binding Label}" Style="{StaticResource Dim}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="HintMark" Text=" ⓘ" FontSize="11" Foreground="{DynamicResource Accent}" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Grid.Column="1" Text="{Binding Value}" Style="{StaticResource Body}" FontSize="13"/>
+            </Grid>
+            <DataTemplate.Triggers>
+                <DataTrigger Binding="{Binding Hint}" Value="{x:Null}">
+                    <Setter TargetName="HintMark" Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- Cartão de uma peça -->
+        <DataTemplate x:Key="SectionTemplate">
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,12">
+                        <Border Style="{StaticResource PartBadge}">
+                            <TextBlock Text="{Binding Badge}" Style="{StaticResource PartBadgeText}"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Title}" Style="{StaticResource CardTitle}" Margin="0,0,0,2"/>
+                            <TextBlock Text="{Binding Headline}" FontSize="17" FontWeight="SemiBold" Foreground="{DynamicResource Text}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <!-- Slots de memória desenhados -->
+                    <StackPanel Visibility="{Binding HasSlots, Converter={StaticResource BoolToVis}}" Margin="0,0,0,12">
+                        <ItemsControl ItemsSource="{Binding Slots}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,14,0" Width="62" ToolTip="{Binding Detail}" Background="Transparent">
+                                        <local:RamStick Filled="{Binding Filled}" Index="{Binding Index}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding Size}" HorizontalAlignment="Center" FontWeight="SemiBold" Foreground="{DynamicResource Text}" Margin="0,6,0,0"/>
+                                        <TextBlock Text="{Binding Name}" HorizontalAlignment="Center" Style="{StaticResource Dim}" FontSize="11" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource RowTemplate}"/>
+
+                    <StackPanel Margin="0,12,0,0">
+                        <ToggleButton x:Name="ExplainBtn" Content="O que é isso?" Style="{StaticResource ExplainToggle}"/>
+                        <Border x:Name="ExplainBox" Style="{StaticResource TipBox}" Margin="0,8,0,0" Visibility="Collapsed" Opacity="0">
+                            <TextBlock Text="{Binding Explain}" Style="{StaticResource Body}" FontSize="12.5"/>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+            <DataTemplate.Triggers>
+                <Trigger SourceName="ExplainBtn" Property="IsChecked" Value="True">
+                    <Setter TargetName="ExplainBox" Property="Visibility" Value="Visible"/>
+                    <Trigger.EnterActions>
+                        <BeginStoryboard><Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="ExplainBox" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.3"/>
+                        </Storyboard></BeginStoryboard>
+                    </Trigger.EnterActions>
+                    <Trigger.ExitActions>
+                        <BeginStoryboard><Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="ExplainBox" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.15"/>
+                        </Storyboard></BeginStoryboard>
+                    </Trigger.ExitActions>
+                </Trigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+
+        <!-- Ponto de atenção -->
+        <DataTemplate x:Key="FindingTemplate">
+            <Grid Margin="0,0,0,14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Border Style="{StaticResource LevelFill}" Width="26" Height="26" CornerRadius="13" VerticalAlignment="Top" Margin="0,1,14,0">
+                    <TextBlock Text="{Binding Glyph}" Foreground="#101114" FontWeight="Bold" FontSize="13" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="{Binding Title}" FontSize="14.5" FontWeight="SemiBold" Foreground="{DynamicResource Text}" TextWrapping="Wrap"/>
+                    <TextBlock Text="{Binding Detail}" Style="{StaticResource Dim}" Margin="0,2,0,0"/>
+                    <TextBlock Style="{StaticResource Body}" FontSize="12.5" Margin="0,4,0,0" Visibility="{Binding HasFix, Converter={StaticResource BoolToVis}}">
+                        <Run Text="Como resolver: " FontWeight="SemiBold" Foreground="{DynamicResource Accent}"/><Run Text="{Binding HowToFix, Mode=OneWay}"/>
+                    </TextBlock>
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+
+        <!-- Cartão de disco -->
+        <DataTemplate x:Key="DiskTemplate">
+            <Border Style="{StaticResource Card}">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,14">
+                        <Border Style="{StaticResource PartBadge}">
+                            <TextBlock Text="{Binding Badge}" Style="{StaticResource PartBadgeText}"/>
+                        </Border>
+                        <!-- Saúde -->
+                        <Border DockPanel.Dock="Right" CornerRadius="14" Padding="12,5" VerticalAlignment="Center" Background="{DynamicResource Track}">
+                            <StackPanel Orientation="Horizontal">
+                                <Border Width="10" Height="10" CornerRadius="5" Margin="0,0,8,0" VerticalAlignment="Center">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{DynamicResource Cpu}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HealthLevel}" Value="Good"><Setter Property="Background" Value="{DynamicResource Good}"/></DataTrigger>
+                                                <DataTrigger Binding="{Binding HealthLevel}" Value="Warn"><Setter Property="Background" Value="{DynamicResource Warn}"/></DataTrigger>
+                                                <DataTrigger Binding="{Binding HealthLevel}" Value="Bad"><Setter Property="Background" Value="{DynamicResource Bad}"/></DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                </Border>
+                                <TextBlock Text="{Binding HealthText}" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
+                            </StackPanel>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+                                <TextBlock Text="{Binding Title}" Style="{StaticResource CardTitle}" Margin="0"/>
+                                <Border Background="{DynamicResource Accent}" CornerRadius="6" Padding="6,1" Margin="8,0,0,0" VerticalAlignment="Center"
+                                        Visibility="{Binding HoldsWindows, Converter={StaticResource BoolToVis}}">
+                                    <TextBlock Text="WINDOWS" FontSize="9.5" FontWeight="Bold" Foreground="White"/>
+                                </Border>
+                            </StackPanel>
+                            <TextBlock Text="{Binding Model}" FontSize="17" FontWeight="SemiBold" Foreground="{DynamicResource Text}" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </DockPanel>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="24"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Esquerda: dados -->
+                        <ItemsControl ItemsSource="{Binding Rows}" ItemTemplate="{StaticResource RowTemplate}"/>
+
+                        <!-- Direita: barras de vida, temperatura e espaço -->
+                        <StackPanel Grid.Column="2">
+                            <StackPanel Visibility="{Binding HasLife, Converter={StaticResource BoolToVis}}" Margin="0,0,0,12"
+                                        ToolTip="Estimativa do fabricante de quanto ainda resta da vida útil do SSD, com base no volume já gravado. 100% = novo.">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding LifeText}" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
+                                    <TextBlock Text="Vida útil restante" Style="{StaticResource Dim}"/>
+                                </DockPanel>
+                                <local:UsageBar Value="{Binding LifePercent, FallbackValue=0, TargetNullValue=0}" Level="{Binding LifeLevel}" Margin="0,5,0,0"/>
+                            </StackPanel>
+                            <StackPanel Visibility="{Binding HasTemp, Converter={StaticResource BoolToVis}}" Margin="0,0,0,12"
+                                        ToolTip="Temperatura atual. SSD NVMe vai bem até uns 70 °C; HD prefere ficar abaixo de 50 °C.">
+                                <DockPanel>
+                                    <TextBlock DockPanel.Dock="Right" Text="{Binding TempText}" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
+                                    <TextBlock Text="Temperatura" Style="{StaticResource Dim}"/>
+                                </DockPanel>
+                                <local:UsageBar Value="{Binding TempPercent}" Level="{Binding TempLevel}" Margin="0,5,0,0"/>
+                            </StackPanel>
+                            <ItemsControl ItemsSource="{Binding Volumes}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,0,0,12" ToolTip="Espaço ocupado nesta unidade. Deixe pelo menos 15% livre para o Windows e o SSD trabalharem bem.">
+                                            <DockPanel>
+                                                <TextBlock DockPanel.Dock="Right" Text="{Binding Detail}" Style="{StaticResource Dim}"/>
+                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Foreground="{DynamicResource Text}" TextTrimming="CharacterEllipsis"/>
+                                            </DockPanel>
+                                            <local:UsageBar Value="{Binding UsedPercent}" Level="{Binding Level}" Margin="0,5,0,0"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Grid>
+
+                    <!-- S.M.A.R.T. -->
+                    <TextBlock Text="{Binding SmartNote}" Margin="0,8,0,0" FontStyle="Italic">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource Dim}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasSmart}" Value="True"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <StackPanel Margin="0,10,0,0" Visibility="{Binding HasSmart, Converter={StaticResource BoolToVis}}">
+                        <ToggleButton x:Name="SmartBtn" Content="{Binding SmartButton}" Style="{StaticResource ExplainToggle}"/>
+                        <Border x:Name="SmartBox" Margin="0,10,0,0" Visibility="Collapsed" Opacity="0" CornerRadius="10" Background="{DynamicResource Bg}" Padding="12,8">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource Dim}" FontSize="12" Margin="0,0,0,8"
+                                           Text="Cada atributo tem um valor atual (normalizado de 0 a 100 ou 200, maior é melhor), o pior já registrado e o limite do fabricante. Se o atual cair até o limite, o disco é considerado em falha. Passe o mouse num atributo para ver o que ele significa."/>
+                                <Grid Margin="0,0,0,4">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40"/><ColumnDefinition Width="*"/><ColumnDefinition Width="56"/><ColumnDefinition Width="56"/><ColumnDefinition Width="56"/><ColumnDefinition Width="110"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="ID" Style="{StaticResource CardTitle}" Margin="0"/>
+                                    <TextBlock Grid.Column="1" Text="ATRIBUTO" Style="{StaticResource CardTitle}" Margin="0"/>
+                                    <TextBlock Grid.Column="2" Text="ATUAL" Style="{StaticResource CardTitle}" Margin="0"/>
+                                    <TextBlock Grid.Column="3" Text="PIOR" Style="{StaticResource CardTitle}" Margin="0"/>
+                                    <TextBlock Grid.Column="4" Text="LIMITE" Style="{StaticResource CardTitle}" Margin="0"/>
+                                    <TextBlock Grid.Column="5" Text="VALOR BRUTO" Style="{StaticResource CardTitle}" Margin="0"/>
+                                </Grid>
+                                <ItemsControl ItemsSource="{Binding Smart}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,2" Background="Transparent" ToolTip="{Binding Explain}">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="40"/><ColumnDefinition Width="*"/><ColumnDefinition Width="56"/><ColumnDefinition Width="56"/><ColumnDefinition Width="56"/><ColumnDefinition Width="110"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding Id}" Style="{StaticResource Dim}"/>
+                                                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                                                    <Border Style="{StaticResource LevelFill}" Width="8" Height="8" CornerRadius="4" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="{Binding Name}" Style="{StaticResource LevelText}" FontSize="13" TextTrimming="CharacterEllipsis"/>
+                                                </StackPanel>
+                                                <TextBlock Grid.Column="2" Text="{Binding Current}" Foreground="{DynamicResource Text}"/>
+                                                <TextBlock Grid.Column="3" Text="{Binding Worst}" Style="{StaticResource Dim}"/>
+                                                <TextBlock Grid.Column="4" Text="{Binding Threshold}" Style="{StaticResource Dim}"/>
+                                                <TextBlock Grid.Column="5" Text="{Binding Raw}" Foreground="{DynamicResource Text}"/>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+            <DataTemplate.Triggers>
+                <Trigger SourceName="SmartBtn" Property="IsChecked" Value="True">
+                    <Setter TargetName="SmartBox" Property="Visibility" Value="Visible"/>
+                    <Trigger.EnterActions>
+                        <BeginStoryboard><Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="SmartBox" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.3"/>
+                        </Storyboard></BeginStoryboard>
+                    </Trigger.EnterActions>
+                    <Trigger.ExitActions>
+                        <BeginStoryboard><Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="SmartBox" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.15"/>
+                        </Storyboard></BeginStoryboard>
+                    </Trigger.ExitActions>
+                </Trigger>
+            </DataTemplate.Triggers>
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid>
+        <ScrollViewer x:Name="Scroller">
+            <StackPanel Margin="32,8,18,28">
+                <TextBlock Text="Meu PC" Style="{StaticResource PageTitle}"/>
+                <TextBlock Style="{StaticResource PageSubtitle}"
+                           Text="A ficha completa do seu computador: cada peça, como ela está configurada e se algo está segurando o desempenho."/>
+
+                <Border Style="{StaticResource TipBox}">
+                    <TextBlock Style="{StaticResource Body}">
+                        <Run FontWeight="Bold">💡 Para que serve esta página?</Run>
+                        <Run>Antes de comprar peça nova, vale conferir se as que você já tem estão rendendo tudo. Problemas comuns: memória com um pente só, memória abaixo da velocidade de fábrica, monitor de 144 Hz rodando a 60 Hz e disco quase cheio. Os pontos de atenção logo abaixo avisam e explicam como resolver. Clique em "O que é isso?" em qualquer cartão para aprender sobre a peça.</Run>
+                    </TextBlock>
+                </Border>
+
+                <!-- Cabeçalho com resumo e ações -->
+                <Border x:Name="Hero" Style="{StaticResource Card}">
+                    <DockPanel>
+                        <WrapPanel DockPanel.Dock="Bottom" Margin="0,16,0,0">
+                            <Button x:Name="RefreshBtn" Content="⟳  Ler de novo" Style="{StaticResource GhostButton}" Margin="0,0,10,0" Click="OnRefresh"
+                                    ToolTip="Lê todas as informações outra vez (por exemplo, depois de trocar uma peça ou mudar algo na BIOS)."/>
+                            <Button x:Name="CopyBtn" Content="Copiar resumo" Style="{StaticResource GhostButton}" Margin="0,0,10,0" Click="OnCopy"
+                                    ToolTip="Copia uma lista curta das peças. Cole em fóruns, grupos ou no Discord quando for pedir ajuda."/>
+                            <Button x:Name="HtmlBtn" Content="Salvar relatório (HTML)" Style="{StaticResource PrimaryButton}" Margin="0,0,10,0" Click="OnExportHtml"
+                                    ToolTip="Gera uma página com tudo desta tela, para abrir no navegador ou mandar para alguém."/>
+                            <Button x:Name="JsonBtn" Content="Salvar dados (JSON)" Style="{StaticResource GhostButton}" Click="OnExportJson"
+                                    ToolTip="Os mesmos dados em formato para outros programas e planilhas."/>
+                        </WrapPanel>
+                        <Border Style="{StaticResource PartBadge}" Width="56" Height="56" CornerRadius="14" Background="{DynamicResource Accent}">
+                            <TextBlock Text="PC" FontSize="18" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock x:Name="PcName" Text="Seu computador" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource Text}"/>
+                            <TextBlock x:Name="PcSub" Text="Lendo informações..." Style="{StaticResource Dim}" Margin="0,2,0,8"/>
+                            <ItemsControl x:Name="Chips">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border CornerRadius="9" Background="{DynamicResource Track}" Padding="4,4,10,4" Margin="0,0,8,8">
+                                            <StackPanel Orientation="Horizontal">
+                                                <Border CornerRadius="6" Background="{DynamicResource AccentSoft}" Padding="6,1" Margin="0,0,8,0">
+                                                    <TextBlock Text="{Binding Badge}" FontSize="10.5" FontWeight="Bold" Foreground="{DynamicResource Accent}" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <TextBlock Text="{Binding Text}" FontSize="12.5" Foreground="{DynamicResource Text}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <!-- Carregando -->
+                <Border x:Name="LoadingCard" Style="{StaticResource Card}">
+                    <StackPanel Orientation="Horizontal">
+                        <Grid Width="44" Height="44" Margin="0,0,18,0">
+                            <Ellipse Stroke="{DynamicResource Track}" StrokeThickness="5"/>
+                            <Ellipse x:Name="Spinner" Stroke="{DynamicResource Accent}" StrokeThickness="5" StrokeDashArray="4 8" StrokeDashCap="Round" RenderTransformOrigin="0.5,0.5">
+                                <Ellipse.RenderTransform><RotateTransform/></Ellipse.RenderTransform>
+                            </Ellipse>
+                        </Grid>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock x:Name="LoadingText" Text="Lendo informações do seu PC..." FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
+                            <TextBlock Text="O Windows responde peça por peça; leva de 2 a 10 segundos." Style="{StaticResource Dim}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel x:Name="Body" Visibility="Collapsed">
+                    <!-- Pontos de atenção -->
+                    <Border x:Name="FindingsCard" Style="{StaticResource Card}">
+                        <StackPanel>
+                            <DockPanel Margin="0,0,0,14">
+                                <StackPanel x:Name="Counters" DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center"/>
+                                <StackPanel>
+                                    <TextBlock Text="PONTOS DE ATENÇÃO" Style="{StaticResource CardTitle}" Margin="0,0,0,2"/>
+                                    <TextBlock x:Name="FindingsHeadline" FontSize="17" FontWeight="SemiBold" Foreground="{DynamicResource Text}" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </DockPanel>
+                            <StackPanel x:Name="FindingsList"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Peças em duas colunas (uma só em janelas estreitas) -->
+                    <Grid x:Name="Columns">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel x:Name="LeftCol"/>
+                        <StackPanel x:Name="RightCol" Grid.Column="1"/>
+                    </Grid>
+
+                    <!-- Discos -->
+                    <TextBlock Text="Discos e saúde (S.M.A.R.T.)" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource Text}" Margin="0,10,0,4"/>
+                    <TextBlock Style="{StaticResource PageSubtitle}" Margin="0,0,14,12" Text="{x:Static local:SystemView.DiskIntro}"/>
+                    <StackPanel x:Name="DiskList"/>
+
+                    <TextBlock x:Name="ErrorsText" Style="{StaticResource Dim}" Foreground="{DynamicResource Warn}" Visibility="Collapsed" Margin="0,4,14,0"/>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Aviso flutuante (relatório salvo, resumo copiado) -->
+        <Border x:Name="Toast" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,24" Padding="16,10" CornerRadius="12"
+                Background="{DynamicResource CardHover}" BorderBrush="{DynamicResource Border}" BorderThickness="1" Visibility="Collapsed">
+            <Border.RenderTransform><TranslateTransform/></Border.RenderTransform>
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="24" ShadowDepth="4" Opacity="0.35"/>
+            </Border.Effect>
+            <StackPanel Orientation="Horizontal">
+                <Border x:Name="ToastIcon" Width="22" Height="22" CornerRadius="11" Background="{DynamicResource Good}" Margin="0,0,10,0" VerticalAlignment="Center">
+                    <TextBlock x:Name="ToastGlyph" Text="✓" Foreground="#101114" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <TextBlock x:Name="ToastText" Foreground="{DynamicResource Text}" VerticalAlignment="Center" MaxWidth="520" TextTrimming="CharacterEllipsis"/>
+                <Button x:Name="ToastAction" Content="Mostrar na pasta" Style="{StaticResource GhostButton}" Padding="12,6" Margin="14,0,0,0" Click="OnShowInFolder" Visibility="Collapsed"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</UserControl>
