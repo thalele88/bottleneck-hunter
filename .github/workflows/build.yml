@@ -9,6 +9,11 @@ on:
 permissions:
   contents: write
 
+# Vários pushes seguidos na main: só o mais novo segue, para a release "latest" nunca ficar com código antigo.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: windows-latest
@@ -39,6 +44,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Se outro push chegou enquanto este rodava, deixa a release para o run mais novo.
+          if [ "$(gh api repos/${GITHUB_REPOSITORY}/commits/main --jq .sha)" != "$GITHUB_SHA" ]; then
+            echo "A main já avançou; a release fica com o run mais novo."
+            exit 0
+          fi
           gh release delete latest --yes --cleanup-tag || true
           gh release create latest dist/BottleneckHunter-win-x64.zip \
             --title "Bottleneck Hunter (última versão)" \
