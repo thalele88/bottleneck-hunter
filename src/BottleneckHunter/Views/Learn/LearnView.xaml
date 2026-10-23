@@ -1,0 +1,1016 @@
+<UserControl x:Class="BottleneckHunter.Views.Learn.LearnView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+
+        <!-- ===== Estilos do módulo ===== -->
+        <Style x:Key="SectionTitle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="19"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+            <Setter Property="Margin" Value="0,18,0,2"/>
+        </Style>
+        <Style x:Key="SectionHint" TargetType="TextBlock" BasedOn="{StaticResource Dim}">
+            <Setter Property="Margin" Value="0,0,14,12"/>
+        </Style>
+        <Style x:Key="ArtLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <!-- Botão de assunto: cartão pequeno que acende quando escolhido -->
+        <Style x:Key="TopicChip" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="{DynamicResource TextDim}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,8,8"/>
+            <Setter Property="FontSize" Value="13.5"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Setter Property="RenderTransform"><Setter.Value><ScaleTransform/></Setter.Value></Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="B" CornerRadius="12" Padding="14,9" BorderThickness="1"
+                                Background="{DynamicResource Card}" BorderBrush="{DynamicResource Border}">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="B" Property="Background" Value="{DynamicResource CardHover}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="B" Property="Background" Value="{DynamicResource AccentSoft}"/>
+                                <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+                                <Trigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" From="0.9" To="1" Duration="0:0:0.35">
+                                                <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.6"/></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                            <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)" From="0.9" To="1" Duration="0:0:0.35">
+                                                <DoubleAnimation.EasingFunction><BackEase EasingMode="EaseOut" Amplitude="0.6"/></DoubleAnimation.EasingFunction>
+                                            </DoubleAnimation>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </Trigger.EnterActions>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Controle deslizante do laboratório (a cor vem de Foreground) -->
+        <Style x:Key="SliderPart" TargetType="RepeatButton">
+            <Setter Property="Focusable" Value="False"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RepeatButton">
+                        <Grid Background="Transparent">
+                            <Border Height="6" CornerRadius="3" Background="{TemplateBinding Background}" VerticalAlignment="Center"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="SliderKnob" TargetType="Thumb">
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Setter Property="RenderTransform"><Setter.Value><ScaleTransform/></Setter.Value></Setter>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Thumb">
+                        <Ellipse Width="20" Height="20" Fill="{TemplateBinding Background}" Stroke="White" StrokeThickness="3"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <EventTrigger RoutedEvent="MouseEnter">
+                    <BeginStoryboard><Storyboard>
+                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="1.2" Duration="0:0:0.15"/>
+                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)" To="1.2" Duration="0:0:0.15"/>
+                    </Storyboard></BeginStoryboard>
+                </EventTrigger>
+                <EventTrigger RoutedEvent="MouseLeave">
+                    <BeginStoryboard><Storyboard>
+                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleX)" To="1" Duration="0:0:0.2"/>
+                        <DoubleAnimation Storyboard.TargetProperty="RenderTransform.(ScaleTransform.ScaleY)" To="1" Duration="0:0:0.2"/>
+                    </Storyboard></BeginStoryboard>
+                </EventTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="LabSlider" TargetType="Slider">
+            <Setter Property="IsMoveToPointEnabled" Value="True"/>
+            <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid Height="28" Background="Transparent">
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="Slider.DecreaseLarge" Style="{StaticResource SliderPart}" Background="{TemplateBinding Foreground}"/>
+                                </Track.DecreaseRepeatButton>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="Slider.IncreaseLarge" Style="{StaticResource SliderPart}" Background="{DynamicResource Track}"/>
+                                </Track.IncreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb Style="{StaticResource SliderKnob}" Background="{TemplateBinding Foreground}"/>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Caixa de busca com texto de exemplo (vem do Tag) -->
+        <Style x:Key="SearchBox" TargetType="TextBox">
+            <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource Text}"/>
+            <Setter Property="SelectionBrush" Value="{DynamicResource Accent}"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="B" CornerRadius="10" Padding="12,9" BorderThickness="1"
+                                Background="{DynamicResource Track}" BorderBrush="{DynamicResource Border}">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Left" Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                           Foreground="{DynamicResource TextDim}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <Grid>
+                                    <TextBlock x:Name="Hint" Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                               Foreground="{DynamicResource TextDim}" IsHitTestVisible="False" Visibility="Collapsed" VerticalAlignment="Center"/>
+                                    <ScrollViewer x:Name="PART_ContentHost" VerticalAlignment="Center"/>
+                                </Grid>
+                            </DockPanel>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="Text" Value="">
+                                <Setter TargetName="Hint" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Alternativa do quiz -->
+        <Style x:Key="QuizOption" TargetType="Button">
+            <Setter Property="Foreground" Value="{DynamicResource Text}"/>
+            <Setter Property="Background" Value="{DynamicResource Track}"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,0,8"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="RenderTransformOrigin" Value="0.5,0.5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="B" CornerRadius="10" Padding="16,11" BorderThickness="1.5"
+                                Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="B" Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ===== Animações das ilustrações (uma por assunto, iniciadas pelo código) ===== -->
+
+        <Storyboard x:Key="Anim_gargalo">
+            <DoubleAnimation Storyboard.TargetName="GargCrowdA" Storyboard.TargetProperty="X" From="-2" To="2" Duration="0:0:0.35" AutoReverse="True" RepeatBehavior="Forever"/>
+            <DoubleAnimation Storyboard.TargetName="GargCrowdB" Storyboard.TargetProperty="X" From="2" To="-2" Duration="0:0:0.45" AutoReverse="True" RepeatBehavior="Forever"/>
+            <DoubleAnimation Storyboard.TargetName="GargRing" Storyboard.TargetProperty="Opacity" From="0.25" To="1" Duration="0:0:0.6" AutoReverse="True" RepeatBehavior="Forever"/>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GargDrop1" Storyboard.TargetProperty="X" RepeatBehavior="Forever">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:1.8" Value="112"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GargDropE1" Storyboard.TargetProperty="Opacity" RepeatBehavior="Forever">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.2" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:1.4" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:1.8" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GargDrop2" Storyboard.TargetProperty="X" RepeatBehavior="Forever" BeginTime="0:0:0.6">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:1.8" Value="112"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GargDropE2" Storyboard.TargetProperty="Opacity" RepeatBehavior="Forever" BeginTime="0:0:0.6">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.2" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:1.4" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:1.8" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GargDrop3" Storyboard.TargetProperty="X" RepeatBehavior="Forever" BeginTime="0:0:1.2">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:1.8" Value="112"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GargDropE3" Storyboard.TargetProperty="Opacity" RepeatBehavior="Forever" BeginTime="0:0:1.2">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.2" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:1.4" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:1.8" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+        </Storyboard>
+
+        <Storyboard x:Key="Anim_cpu">
+            <DoubleAnimation Storyboard.TargetName="CpuCore1" Storyboard.TargetProperty="Opacity" From="0.75" To="1" Duration="0:0:0.3" AutoReverse="True" RepeatBehavior="Forever"/>
+            <DoubleAnimation Storyboard.TargetName="CpuCore2" Storyboard.TargetProperty="Opacity" From="0.08" To="0.5" Duration="0:0:0.6" AutoReverse="True" RepeatBehavior="Forever" BeginTime="0:0:0.2"/>
+            <DoubleAnimation Storyboard.TargetName="CpuCore3" Storyboard.TargetProperty="Opacity" From="0.08" To="0.4" Duration="0:0:0.7" AutoReverse="True" RepeatBehavior="Forever" BeginTime="0:0:0.5"/>
+            <DoubleAnimation Storyboard.TargetName="CpuCore4" Storyboard.TargetProperty="Opacity" From="0.08" To="0.45" Duration="0:0:0.5" AutoReverse="True" RepeatBehavior="Forever" BeginTime="0:0:0.8"/>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="CpuPkt1" Storyboard.TargetProperty="X" RepeatBehavior="Forever">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.8" Value="58"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:1" Value="58"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="CpuPktE1" Storyboard.TargetProperty="Opacity" RepeatBehavior="Forever">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.15" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.7" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.8" Value="0"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:1" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="CpuPkt2" Storyboard.TargetProperty="X" RepeatBehavior="Forever" BeginTime="0:0:0.5">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.8" Value="58"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:1" Value="58"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="CpuPktE2" Storyboard.TargetProperty="Opacity" RepeatBehavior="Forever" BeginTime="0:0:0.5">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.15" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.7" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.8" Value="0"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:1" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+        </Storyboard>
+
+        <Storyboard x:Key="Anim_gpu">
+            <DoubleAnimation Storyboard.TargetName="GpuFan1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.9" RepeatBehavior="Forever"/>
+            <DoubleAnimation Storyboard.TargetName="GpuFan2" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.9" RepeatBehavior="Forever"/>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GpuCover" Storyboard.TargetProperty="ScaleY" RepeatBehavior="Forever">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:1.4" Value="0"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:2.2" Value="1"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GpuScan" Storyboard.TargetProperty="Y" RepeatBehavior="Forever">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:1.4" Value="46"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:2.2" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="GpuScanLine" Storyboard.TargetProperty="Opacity" RepeatBehavior="Forever">
+                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:1.4" Value="0"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:2.2" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+        </Storyboard>
+
+        <Storyboard x:Key="Anim_ram">
+            <!-- Três pacotes sobem da RAM para a CPU e um volta -->
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RamPkt1" Storyboard.TargetProperty="X" RepeatBehavior="Forever">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:1" Value="95"/><DiscreteDoubleKeyFrame KeyTime="0:0:1.6" Value="95"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RamPkt1" Storyboard.TargetProperty="Y" RepeatBehavior="Forever">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:1" Value="-46"/><DiscreteDoubleKeyFrame KeyTime="0:0:1.6" Value="-46"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RamPktE1" Storyboard.TargetProperty="Opacity" RepeatBehavior="Forever">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:0.1" Value="1"/><LinearDoubleKeyFrame KeyTime="0:0:0.85" Value="1"/><LinearDoubleKeyFrame KeyTime="0:0:1" Value="0"/><DiscreteDoubleKeyFrame KeyTime="0:0:1.6" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RamChip1" Storyboard.TargetProperty="Opacity" RepeatBehavior="Forever">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0.9"/><LinearDoubleKeyFrame KeyTime="0:0:0.5" Value="0"/><DiscreteDoubleKeyFrame KeyTime="0:0:1.6" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RamPkt2" Storyboard.TargetProperty="X" RepeatBehavior="Forever" BeginTime="0:0:0.4">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:1" Value="-19"/><DiscreteDoubleKeyFrame KeyTime="0:0:1.6" Value="-19"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RamPkt2" Storyboard.TargetProperty="Y" RepeatBehavior="Forever" BeginTime="0:0:0.4">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:1" Value="-46"/><DiscreteDoubleKeyFrame KeyTime="0:0:1.6" Value="-46"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RamPktE2" Storyboard.TargetProperty="Opacity" RepeatBehavior="Forever" BeginTime="0:0:0.4">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:0.1" Value="1"/><LinearDoubleKeyFrame KeyTime="0:0:0.85" Value="1"/><LinearDoubleKeyFrame KeyTime="0:0:1" Value="0"/><DiscreteDoubleKeyFrame KeyTime="0:0:1.6" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RamChip4" Storyboard.TargetProperty="Opacity" RepeatBehavior="Forever" BeginTime="0:0:0.4">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0.9"/><LinearDoubleKeyFrame KeyTime="0:0:0.5" Value="0"/><DiscreteDoubleKeyFrame KeyTime="0:0:1.6" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RamPkt3" Storyboard.TargetProperty="X" RepeatBehavior="Forever" BeginTime="0:0:0.8">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:1" Value="-95"/><DiscreteDoubleKeyFrame KeyTime="0:0:1.6" Value="-95"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RamPkt3" Storyboard.TargetProperty="Y" RepeatBehavior="Forever" BeginTime="0:0:0.8">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:1" Value="-46"/><DiscreteDoubleKeyFrame KeyTime="0:0:1.6" Value="-46"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RamPktE3" Storyboard.TargetProperty="Opacity" RepeatBehavior="Forever" BeginTime="0:0:0.8">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:0.1" Value="1"/><LinearDoubleKeyFrame KeyTime="0:0:0.85" Value="1"/><LinearDoubleKeyFrame KeyTime="0:0:1" Value="0"/><DiscreteDoubleKeyFrame KeyTime="0:0:1.6" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RamChip6" Storyboard.TargetProperty="Opacity" RepeatBehavior="Forever" BeginTime="0:0:0.8">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0.9"/><LinearDoubleKeyFrame KeyTime="0:0:0.5" Value="0"/><DiscreteDoubleKeyFrame KeyTime="0:0:1.6" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RamPkt4" Storyboard.TargetProperty="X" RepeatBehavior="Forever" BeginTime="0:0:1.2">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:1" Value="-19"/><DiscreteDoubleKeyFrame KeyTime="0:0:1.6" Value="-19"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RamPkt4" Storyboard.TargetProperty="Y" RepeatBehavior="Forever" BeginTime="0:0:1.2">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:1" Value="48"/><DiscreteDoubleKeyFrame KeyTime="0:0:1.6" Value="48"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RamPktE4" Storyboard.TargetProperty="Opacity" RepeatBehavior="Forever" BeginTime="0:0:1.2">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:0.1" Value="1"/><LinearDoubleKeyFrame KeyTime="0:0:0.85" Value="1"/><LinearDoubleKeyFrame KeyTime="0:0:1" Value="0"/><DiscreteDoubleKeyFrame KeyTime="0:0:1.6" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+        </Storyboard>
+
+        <!-- VRAM: enche, fica vermelha, transborda para a RAM e esvazia (ciclo de 6 s) -->
+        <Storyboard x:Key="Anim_vram" Duration="0:0:6" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetName="VramPkt" Storyboard.TargetProperty="X" From="0" To="12" Duration="0:0:0.4" RepeatBehavior="Forever"/>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="VramFill" Storyboard.TargetProperty="ScaleY">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0.15"/>
+                <EasingDoubleKeyFrame KeyTime="0:0:2.6" Value="1"><EasingDoubleKeyFrame.EasingFunction><CubicEase EasingMode="EaseOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                <LinearDoubleKeyFrame KeyTime="0:0:5.4" Value="1"/>
+                <EasingDoubleKeyFrame KeyTime="0:0:6" Value="0.15"><EasingDoubleKeyFrame.EasingFunction><CubicEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="VramDanger" Storyboard.TargetProperty="Opacity">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:2.2" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:2.6" Value="0.85"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:5.4" Value="0.85"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:5.8" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="VramOver1" Storyboard.TargetProperty="X">
+                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:2.8" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:4" Value="48"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="VramOver1" Storyboard.TargetProperty="Y">
+                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:2.8" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:4" Value="52"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="VramOverE1" Storyboard.TargetProperty="Opacity">
+                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0"/><DiscreteDoubleKeyFrame KeyTime="0:0:2.8" Value="1"/><LinearDoubleKeyFrame KeyTime="0:0:3.9" Value="1"/><LinearDoubleKeyFrame KeyTime="0:0:4" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="VramOver2" Storyboard.TargetProperty="X">
+                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:3.6" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:4.8" Value="48"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="VramOver2" Storyboard.TargetProperty="Y">
+                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:3.6" Value="0"/><LinearDoubleKeyFrame KeyTime="0:0:4.8" Value="52"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="VramOverE2" Storyboard.TargetProperty="Opacity">
+                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0"/><DiscreteDoubleKeyFrame KeyTime="0:0:3.6" Value="1"/><LinearDoubleKeyFrame KeyTime="0:0:4.7" Value="1"/><LinearDoubleKeyFrame KeyTime="0:0:4.8" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="VramWarn" Storyboard.TargetProperty="Opacity">
+                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:2.6" Value="1"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:3.1" Value="0.35"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:3.4" Value="1"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:3.9" Value="0.35"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:4.2" Value="1"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:5.4" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+        </Storyboard>
+
+        <!-- Disco: HD carrega devagar, SSD termina num instante (ciclo de 6 s) -->
+        <Storyboard x:Key="Anim_disco" Duration="0:0:6" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetName="HdSpin" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" RepeatBehavior="Forever"/>
+            <DoubleAnimation Storyboard.TargetName="HdArm" Storyboard.TargetProperty="Angle" From="-8" To="10" Duration="0:0:0.45" AutoReverse="True" RepeatBehavior="Forever">
+                <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseInOut"/></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="SsdFlash" Storyboard.TargetProperty="Opacity" From="0" To="0.6" Duration="0:0:0.12" AutoReverse="True" RepeatBehavior="0:0:0.8"/>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="HdBar" Storyboard.TargetProperty="ScaleX">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:5.6" Value="1"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:6" Value="1"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SsdBar" Storyboard.TargetProperty="ScaleX">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <EasingDoubleKeyFrame KeyTime="0:0:0.8" Value="1"><EasingDoubleKeyFrame.EasingFunction><CubicEase EasingMode="EaseOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:6" Value="1"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SsdDone" Storyboard.TargetProperty="Opacity">
+                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:0.8" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:1.0" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:5.8" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:6" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="HdDone" Storyboard.TargetProperty="Opacity">
+                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:5.5" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:5.7" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:6" Value="1"/>
+            </DoubleAnimationUsingKeyFrames>
+        </Storyboard>
+
+        <!-- Temperatura: sobe, a CPU baixa o clock (throttling) e esfria de novo (ciclo de 6 s) -->
+        <Storyboard x:Key="Anim_temperatura" Duration="0:0:6" RepeatBehavior="Forever">
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="TempFill" Storyboard.TargetProperty="ScaleY">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0.25"/>
+                <EasingDoubleKeyFrame KeyTime="0:0:3.4" Value="1"><EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseIn"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+                <LinearDoubleKeyFrame KeyTime="0:0:4.6" Value="0.92"/>
+                <EasingDoubleKeyFrame KeyTime="0:0:6" Value="0.25"><EasingDoubleKeyFrame.EasingFunction><CubicEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction></EasingDoubleKeyFrame>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="TempHot" Storyboard.TargetProperty="Opacity">
+                <LinearDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:2.2" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:3.4" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:4.8" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:5.8" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="TempFast" Storyboard.TargetProperty="Opacity">
+                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:3.4" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:3.7" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:5.5" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:5.8" Value="1"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="TempSlow" Storyboard.TargetProperty="Opacity">
+                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:3.4" Value="0"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:3.7" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:5.5" Value="1"/>
+                <LinearDoubleKeyFrame KeyTime="0:0:5.8" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="TempWarn" Storyboard.TargetProperty="Opacity">
+                <DiscreteDoubleKeyFrame KeyTime="0:0:0" Value="0"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:3.5" Value="1"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:4.0" Value="0.4"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:4.3" Value="1"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:4.8" Value="0.4"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:5.1" Value="1"/>
+                <DiscreteDoubleKeyFrame KeyTime="0:0:5.6" Value="0"/>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimation Storyboard.TargetName="TempWave1" Storyboard.TargetProperty="Y" From="0" To="-14" Duration="0:0:1.2" RepeatBehavior="Forever"/>
+            <DoubleAnimation Storyboard.TargetName="TempWave2" Storyboard.TargetProperty="Y" From="0" To="-14" Duration="0:0:1.2" RepeatBehavior="Forever" BeginTime="0:0:0.4"/>
+            <DoubleAnimation Storyboard.TargetName="TempWave3" Storyboard.TargetProperty="Y" From="0" To="-14" Duration="0:0:1.2" RepeatBehavior="Forever" BeginTime="0:0:0.8"/>
+            <DoubleAnimation Storyboard.TargetName="TempWaveE1" Storyboard.TargetProperty="Opacity" From="0.9" To="0" Duration="0:0:1.2" RepeatBehavior="Forever"/>
+            <DoubleAnimation Storyboard.TargetName="TempWaveE2" Storyboard.TargetProperty="Opacity" From="0.9" To="0" Duration="0:0:1.2" RepeatBehavior="Forever" BeginTime="0:0:0.4"/>
+            <DoubleAnimation Storyboard.TargetName="TempWaveE3" Storyboard.TargetProperty="Opacity" From="0.9" To="0" Duration="0:0:1.2" RepeatBehavior="Forever" BeginTime="0:0:0.8"/>
+        </Storyboard>
+
+        <Storyboard x:Key="Anim_fps">
+            <DoubleAnimation Storyboard.TargetName="FilmMove" Storyboard.TargetProperty="X" From="0" To="-52" Duration="0:0:0.35" RepeatBehavior="Forever"/>
+            <DoubleAnimation Storyboard.TargetName="FpsScan" Storyboard.TargetProperty="X" From="0" To="258" Duration="0:0:3" RepeatBehavior="Forever"/>
+            <DoubleAnimation Storyboard.TargetName="FpsSpike" Storyboard.TargetProperty="Opacity" From="0.2" To="1" Duration="0:0:0.4" AutoReverse="True" RepeatBehavior="Forever"/>
+        </Storyboard>
+    </UserControl.Resources>
+
+    <ScrollViewer x:Name="Scroller" ScrollChanged="OnScrollChanged">
+        <StackPanel Margin="32,8,18,28">
+            <TextBlock Text="Aprenda" Style="{StaticResource PageTitle}"/>
+            <TextBlock Style="{StaticResource PageSubtitle}"
+                       Text="Entenda, sem complicação, o que é gargalo e como cada peça do PC afeta seus jogos. Depois, use o que aprendeu nas outras páginas."/>
+
+            <Border Style="{StaticResource TipBox}">
+                <TextBlock Style="{StaticResource Body}">
+                    <Run FontWeight="Bold">💡 Como usar esta página:</Run>
+                    <Run>escolha um assunto para ver uma animação e uma explicação curta. Depois brinque com o Laboratório do gargalo, faça o quiz e consulte o glossário sempre que aparecer uma palavra estranha no app.</Run>
+                </TextBlock>
+            </Border>
+
+            <!-- ===== Assuntos ===== -->
+            <TextBlock Text="Escolha um assunto" Style="{StaticResource SectionTitle}"/>
+            <TextBlock Text="Cada assunto tem uma ilustração animada, uma comparação do dia a dia, como perceber o problema e o que fazer." Style="{StaticResource SectionHint}"/>
+            <WrapPanel x:Name="TopicBar" Margin="0,0,0,6"/>
+
+            <Border Style="{StaticResource Card}" Padding="22">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="26"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Border x:Name="ArtHost" CornerRadius="12" Background="{DynamicResource Bg}" Padding="10" VerticalAlignment="Top" RenderTransformOrigin="0.5,0.5">
+                        <Border.RenderTransform><ScaleTransform x:Name="ArtScale"/></Border.RenderTransform>
+                        <Viewbox Width="300" Height="193">
+                            <Grid Width="280" Height="180">
+
+                                <!-- Gargalo: garrafa deitada, bolinhas apertadas e saída uma por vez -->
+                                <Canvas x:Name="Art_gargalo">
+                                    <Path Data="M28,40 H150 C178,40 182,78 202,78 H264 V102 H202 C182,102 178,140 150,140 H28 Q18,140 18,130 V50 Q18,40 28,40 Z"
+                                          Fill="{DynamicResource Track}" Stroke="{DynamicResource TextDim}" StrokeThickness="2"/>
+                                    <Canvas>
+                                        <Canvas.RenderTransform><TranslateTransform x:Name="GargCrowdA"/></Canvas.RenderTransform>
+                                        <Ellipse Canvas.Left="30" Canvas.Top="50" Width="22" Height="22" Fill="{DynamicResource Cpu}" Opacity="0.85"/>
+                                        <Ellipse Canvas.Left="82" Canvas.Top="50" Width="22" Height="22" Fill="{DynamicResource Cpu}" Opacity="0.85"/>
+                                        <Ellipse Canvas.Left="132" Canvas.Top="56" Width="22" Height="22" Fill="{DynamicResource Cpu}" Opacity="0.85"/>
+                                        <Ellipse Canvas.Left="56" Canvas.Top="108" Width="22" Height="22" Fill="{DynamicResource Cpu}" Opacity="0.85"/>
+                                        <Ellipse Canvas.Left="108" Canvas.Top="108" Width="22" Height="22" Fill="{DynamicResource Cpu}" Opacity="0.85"/>
+                                        <Ellipse Canvas.Left="70" Canvas.Top="79" Width="22" Height="22" Fill="{DynamicResource Cpu}" Opacity="0.85"/>
+                                    </Canvas>
+                                    <Canvas>
+                                        <Canvas.RenderTransform><TranslateTransform x:Name="GargCrowdB"/></Canvas.RenderTransform>
+                                        <Ellipse Canvas.Left="56" Canvas.Top="50" Width="22" Height="22" Fill="{DynamicResource Cpu}" Opacity="0.85"/>
+                                        <Ellipse Canvas.Left="108" Canvas.Top="50" Width="22" Height="22" Fill="{DynamicResource Cpu}" Opacity="0.85"/>
+                                        <Ellipse Canvas.Left="30" Canvas.Top="108" Width="22" Height="22" Fill="{DynamicResource Cpu}" Opacity="0.85"/>
+                                        <Ellipse Canvas.Left="82" Canvas.Top="108" Width="22" Height="22" Fill="{DynamicResource Cpu}" Opacity="0.85"/>
+                                        <Ellipse Canvas.Left="44" Canvas.Top="79" Width="22" Height="22" Fill="{DynamicResource Cpu}" Opacity="0.85"/>
+                                        <Ellipse Canvas.Left="96" Canvas.Top="79" Width="22" Height="22" Fill="{DynamicResource Cpu}" Opacity="0.85"/>
+                                        <Ellipse Canvas.Left="134" Canvas.Top="98" Width="22" Height="22" Fill="{DynamicResource Cpu}" Opacity="0.85"/>
+                                    </Canvas>
+                                    <Ellipse x:Name="GargDropE1" Canvas.Left="160" Canvas.Top="81" Width="18" Height="18" Fill="{DynamicResource Accent}" Opacity="0">
+                                        <Ellipse.RenderTransform><TranslateTransform x:Name="GargDrop1"/></Ellipse.RenderTransform>
+                                    </Ellipse>
+                                    <Ellipse x:Name="GargDropE2" Canvas.Left="160" Canvas.Top="81" Width="18" Height="18" Fill="{DynamicResource Accent}" Opacity="0">
+                                        <Ellipse.RenderTransform><TranslateTransform x:Name="GargDrop2"/></Ellipse.RenderTransform>
+                                    </Ellipse>
+                                    <Ellipse x:Name="GargDropE3" Canvas.Left="160" Canvas.Top="81" Width="18" Height="18" Fill="{DynamicResource Accent}" Opacity="0">
+                                        <Ellipse.RenderTransform><TranslateTransform x:Name="GargDrop3"/></Ellipse.RenderTransform>
+                                    </Ellipse>
+                                    <Ellipse x:Name="GargRing" Canvas.Left="188" Canvas.Top="62" Width="88" Height="56"
+                                             Stroke="{DynamicResource Accent}" StrokeThickness="2" StrokeDashArray="4 3"/>
+                                    <TextBlock Canvas.Left="200" Canvas.Top="122" Text="gargalo" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource Accent}"/>
+                                    <TextBlock Canvas.Left="194" Canvas.Top="40" Text="o FPS sai daqui" Style="{StaticResource ArtLabel}"/>
+                                    <TextBlock Canvas.Left="22" Canvas.Top="150" Text="o resto do PC esperando a vez" Style="{StaticResource ArtLabel}"/>
+                                    <TextBlock Canvas.Left="22" Canvas.Top="18" Text="peças rápidas" Style="{StaticResource ArtLabel}"/>
+                                </Canvas>
+
+                                <!-- CPU: chip com 4 núcleos, o núcleo principal no limite -->
+                                <Canvas x:Name="Art_cpu" Visibility="Collapsed">
+                                    <Path Stroke="{DynamicResource TextDim}" StrokeThickness="3"
+                                          Data="M95,13 V25 M110,13 V25 M125,13 V25 M140,13 V25 M155,13 V25 M170,13 V25 M185,13 V25 M95,145 V157 M110,145 V157 M125,145 V157 M140,145 V157 M155,145 V157 M170,145 V157 M185,145 V157 M68,40 H80 M68,55 H80 M68,70 H80 M68,85 H80 M68,100 H80 M68,115 H80 M68,130 H80 M200,40 H212 M200,55 H212 M200,70 H212 M200,85 H212 M200,100 H212 M200,115 H212 M200,130 H212"/>
+                                    <Rectangle Canvas.Left="80" Canvas.Top="25" Width="120" Height="120" RadiusX="10" RadiusY="10"
+                                               Fill="{DynamicResource Card}" Stroke="{DynamicResource TextDim}" StrokeThickness="2"/>
+                                    <Rectangle Canvas.Left="92" Canvas.Top="37" Width="46" Height="46" RadiusX="6" RadiusY="6" Fill="{DynamicResource Track}"/>
+                                    <Rectangle Canvas.Left="142" Canvas.Top="37" Width="46" Height="46" RadiusX="6" RadiusY="6" Fill="{DynamicResource Track}"/>
+                                    <Rectangle Canvas.Left="92" Canvas.Top="87" Width="46" Height="46" RadiusX="6" RadiusY="6" Fill="{DynamicResource Track}"/>
+                                    <Rectangle Canvas.Left="142" Canvas.Top="87" Width="46" Height="46" RadiusX="6" RadiusY="6" Fill="{DynamicResource Track}"/>
+                                    <Rectangle x:Name="CpuCore1" Canvas.Left="92" Canvas.Top="37" Width="46" Height="46" RadiusX="6" RadiusY="6" Fill="{DynamicResource Accent}"/>
+                                    <Rectangle x:Name="CpuCore2" Canvas.Left="142" Canvas.Top="37" Width="46" Height="46" RadiusX="6" RadiusY="6" Fill="{DynamicResource Cpu}" Opacity="0.1"/>
+                                    <Rectangle x:Name="CpuCore3" Canvas.Left="92" Canvas.Top="87" Width="46" Height="46" RadiusX="6" RadiusY="6" Fill="{DynamicResource Cpu}" Opacity="0.1"/>
+                                    <Rectangle x:Name="CpuCore4" Canvas.Left="142" Canvas.Top="87" Width="46" Height="46" RadiusX="6" RadiusY="6" Fill="{DynamicResource Cpu}" Opacity="0.1"/>
+                                    <TextBlock Canvas.Left="99" Canvas.Top="52" Text="100%" FontWeight="Bold" FontSize="12" Foreground="White"/>
+                                    <TextBlock Canvas.Left="152" Canvas.Top="52" Text="30%" FontSize="11" Foreground="{DynamicResource TextDim}"/>
+                                    <TextBlock Canvas.Left="102" Canvas.Top="102" Text="20%" FontSize="11" Foreground="{DynamicResource TextDim}"/>
+                                    <TextBlock Canvas.Left="152" Canvas.Top="102" Text="25%" FontSize="11" Foreground="{DynamicResource TextDim}"/>
+                                    <Rectangle x:Name="CpuPktE1" Canvas.Left="6" Canvas.Top="55" Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="{DynamicResource Accent}" Opacity="0">
+                                        <Rectangle.RenderTransform><TranslateTransform x:Name="CpuPkt1"/></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <Rectangle x:Name="CpuPktE2" Canvas.Left="6" Canvas.Top="105" Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="{DynamicResource Cpu}" Opacity="0">
+                                        <Rectangle.RenderTransform><TranslateTransform x:Name="CpuPkt2"/></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <TextBlock Canvas.Left="222" Canvas.Top="40" Width="58" Text="núcleo principal do jogo no limite" Style="{StaticResource ArtLabel}"/>
+                                    <TextBlock Canvas.Left="20" Canvas.Top="162" Text="Uso total: 44%. Mas o núcleo 1 está em 100%!" Style="{StaticResource ArtLabel}"/>
+                                </Canvas>
+
+                                <!-- GPU: placa com ventoinhas girando e um quadro sendo pintado -->
+                                <Canvas x:Name="Art_gpu" Visibility="Collapsed">
+                                    <Rectangle Canvas.Left="0" Canvas.Top="64" Width="6" Height="92" RadiusX="2" RadiusY="2" Fill="{DynamicResource TextDim}"/>
+                                    <Rectangle Canvas.Left="40" Canvas.Top="150" Width="110" Height="7" Fill="{DynamicResource Warn}"/>
+                                    <Rectangle Canvas.Left="6" Canvas.Top="70" Width="180" Height="80" RadiusX="10" RadiusY="10"
+                                               Fill="{DynamicResource Card}" Stroke="{DynamicResource TextDim}" StrokeThickness="2"/>
+                                    <Ellipse Canvas.Left="20" Canvas.Top="78" Width="64" Height="64" Fill="{DynamicResource Track}" Stroke="{DynamicResource TextDim}" StrokeThickness="1.5"/>
+                                    <Ellipse Canvas.Left="108" Canvas.Top="78" Width="64" Height="64" Fill="{DynamicResource Track}" Stroke="{DynamicResource TextDim}" StrokeThickness="1.5"/>
+                                    <Canvas Canvas.Left="22" Canvas.Top="80" Width="60" Height="60">
+                                        <Canvas.RenderTransform><RotateTransform x:Name="GpuFan1" CenterX="30" CenterY="30"/></Canvas.RenderTransform>
+                                        <Ellipse Canvas.Left="23" Canvas.Top="4" Width="14" Height="26" Fill="{DynamicResource Gpu}" Opacity="0.8"><Ellipse.RenderTransform><RotateTransform Angle="0" CenterX="7" CenterY="26"/></Ellipse.RenderTransform></Ellipse>
+                                        <Ellipse Canvas.Left="23" Canvas.Top="4" Width="14" Height="26" Fill="{DynamicResource Gpu}" Opacity="0.8"><Ellipse.RenderTransform><RotateTransform Angle="90" CenterX="7" CenterY="26"/></Ellipse.RenderTransform></Ellipse>
+                                        <Ellipse Canvas.Left="23" Canvas.Top="4" Width="14" Height="26" Fill="{DynamicResource Gpu}" Opacity="0.8"><Ellipse.RenderTransform><RotateTransform Angle="180" CenterX="7" CenterY="26"/></Ellipse.RenderTransform></Ellipse>
+                                        <Ellipse Canvas.Left="23" Canvas.Top="4" Width="14" Height="26" Fill="{DynamicResource Gpu}" Opacity="0.8"><Ellipse.RenderTransform><RotateTransform Angle="270" CenterX="7" CenterY="26"/></Ellipse.RenderTransform></Ellipse>
+                                        <Ellipse Canvas.Left="23" Canvas.Top="23" Width="14" Height="14" Fill="{DynamicResource TextDim}"/>
+                                    </Canvas>
+                                    <Canvas Canvas.Left="110" Canvas.Top="80" Width="60" Height="60">
+                                        <Canvas.RenderTransform><RotateTransform x:Name="GpuFan2" CenterX="30" CenterY="30"/></Canvas.RenderTransform>
+                                        <Ellipse Canvas.Left="23" Canvas.Top="4" Width="14" Height="26" Fill="{DynamicResource Gpu}" Opacity="0.8"><Ellipse.RenderTransform><RotateTransform Angle="45" CenterX="7" CenterY="26"/></Ellipse.RenderTransform></Ellipse>
+                                        <Ellipse Canvas.Left="23" Canvas.Top="4" Width="14" Height="26" Fill="{DynamicResource Gpu}" Opacity="0.8"><Ellipse.RenderTransform><RotateTransform Angle="135" CenterX="7" CenterY="26"/></Ellipse.RenderTransform></Ellipse>
+                                        <Ellipse Canvas.Left="23" Canvas.Top="4" Width="14" Height="26" Fill="{DynamicResource Gpu}" Opacity="0.8"><Ellipse.RenderTransform><RotateTransform Angle="225" CenterX="7" CenterY="26"/></Ellipse.RenderTransform></Ellipse>
+                                        <Ellipse Canvas.Left="23" Canvas.Top="4" Width="14" Height="26" Fill="{DynamicResource Gpu}" Opacity="0.8"><Ellipse.RenderTransform><RotateTransform Angle="315" CenterX="7" CenterY="26"/></Ellipse.RenderTransform></Ellipse>
+                                        <Ellipse Canvas.Left="23" Canvas.Top="23" Width="14" Height="14" Fill="{DynamicResource TextDim}"/>
+                                    </Canvas>
+                                    <!-- Monitor recebendo o quadro -->
+                                    <Rectangle Canvas.Left="196" Canvas.Top="30" Width="80" Height="56" RadiusX="4" RadiusY="4"
+                                               Fill="{DynamicResource Track}" Stroke="{DynamicResource TextDim}" StrokeThickness="2"/>
+                                    <Ellipse Canvas.Left="252" Canvas.Top="40" Width="12" Height="12" Fill="{DynamicResource Warn}"/>
+                                    <Path Data="M200,82 L222,58 L236,70 L250,52 L272,82 Z" Fill="{DynamicResource Gpu}"/>
+                                    <Rectangle Canvas.Left="200" Canvas.Top="34" Width="72" Height="48" Fill="{DynamicResource Track}" RenderTransformOrigin="0.5,1">
+                                        <Rectangle.RenderTransform><ScaleTransform x:Name="GpuCover"/></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <Rectangle x:Name="GpuScanLine" Canvas.Left="200" Canvas.Top="34" Width="72" Height="2" Fill="{DynamicResource Accent}">
+                                        <Rectangle.RenderTransform><TranslateTransform x:Name="GpuScan"/></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <Rectangle Canvas.Left="230" Canvas.Top="86" Width="12" Height="10" Fill="{DynamicResource TextDim}"/>
+                                    <Rectangle Canvas.Left="220" Canvas.Top="96" Width="32" Height="4" RadiusX="2" RadiusY="2" Fill="{DynamicResource TextDim}"/>
+                                    <TextBlock Canvas.Left="200" Canvas.Top="106" Width="80" Text="pintando o quadro, linha por linha" Style="{StaticResource ArtLabel}"/>
+                                    <TextBlock Canvas.Left="10" Canvas.Top="36" Width="180" Text="GPU a 99%: ventoinhas a mil e trabalho no limite" Style="{StaticResource ArtLabel}"/>
+                                </Canvas>
+
+                                <!-- RAM: pente de memória mandando dados para a CPU -->
+                                <Canvas x:Name="Art_ram" Visibility="Collapsed">
+                                    <Rectangle Canvas.Left="105" Canvas.Top="6" Width="70" Height="44" RadiusX="8" RadiusY="8"
+                                               Fill="{DynamicResource Card}" Stroke="{DynamicResource Cpu}" StrokeThickness="2"/>
+                                    <TextBlock Canvas.Left="125" Canvas.Top="17" Text="CPU" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource Cpu}"/>
+                                    <Rectangle Canvas.Left="20" Canvas.Top="104" Width="240" Height="46" RadiusX="4" RadiusY="4"
+                                               Fill="{DynamicResource Track}" Stroke="{DynamicResource TextDim}" StrokeThickness="1.5"/>
+                                    <Rectangle Canvas.Left="28" Canvas.Top="150" Width="224" Height="8" Fill="{DynamicResource Warn}"/>
+                                    <Rectangle Canvas.Left="136" Canvas.Top="150" Width="8" Height="8" Fill="{DynamicResource Bg}"/>
+                                    <Rectangle Canvas.Left="30" Canvas.Top="112" Width="30" Height="30" RadiusX="2" RadiusY="2" Fill="{DynamicResource TextDim}" Opacity="0.55"/>
+                                    <Rectangle Canvas.Left="68" Canvas.Top="112" Width="30" Height="30" RadiusX="2" RadiusY="2" Fill="{DynamicResource TextDim}" Opacity="0.55"/>
+                                    <Rectangle Canvas.Left="106" Canvas.Top="112" Width="30" Height="30" RadiusX="2" RadiusY="2" Fill="{DynamicResource TextDim}" Opacity="0.55"/>
+                                    <Rectangle Canvas.Left="144" Canvas.Top="112" Width="30" Height="30" RadiusX="2" RadiusY="2" Fill="{DynamicResource TextDim}" Opacity="0.55"/>
+                                    <Rectangle Canvas.Left="182" Canvas.Top="112" Width="30" Height="30" RadiusX="2" RadiusY="2" Fill="{DynamicResource TextDim}" Opacity="0.55"/>
+                                    <Rectangle Canvas.Left="220" Canvas.Top="112" Width="30" Height="30" RadiusX="2" RadiusY="2" Fill="{DynamicResource TextDim}" Opacity="0.55"/>
+                                    <Rectangle x:Name="RamChip1" Canvas.Left="30" Canvas.Top="112" Width="30" Height="30" RadiusX="2" RadiusY="2" Fill="{DynamicResource Accent}" Opacity="0"/>
+                                    <Rectangle x:Name="RamChip4" Canvas.Left="144" Canvas.Top="112" Width="30" Height="30" RadiusX="2" RadiusY="2" Fill="{DynamicResource Accent}" Opacity="0"/>
+                                    <Rectangle x:Name="RamChip6" Canvas.Left="220" Canvas.Top="112" Width="30" Height="30" RadiusX="2" RadiusY="2" Fill="{DynamicResource Accent}" Opacity="0"/>
+                                    <Rectangle x:Name="RamPktE1" Canvas.Left="39" Canvas.Top="96" Width="12" Height="12" RadiusX="3" RadiusY="3" Fill="{DynamicResource Accent}" Opacity="0">
+                                        <Rectangle.RenderTransform><TranslateTransform x:Name="RamPkt1"/></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <Rectangle x:Name="RamPktE2" Canvas.Left="153" Canvas.Top="96" Width="12" Height="12" RadiusX="3" RadiusY="3" Fill="{DynamicResource Accent}" Opacity="0">
+                                        <Rectangle.RenderTransform><TranslateTransform x:Name="RamPkt2"/></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <Rectangle x:Name="RamPktE3" Canvas.Left="229" Canvas.Top="96" Width="12" Height="12" RadiusX="3" RadiusY="3" Fill="{DynamicResource Accent}" Opacity="0">
+                                        <Rectangle.RenderTransform><TranslateTransform x:Name="RamPkt3"/></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <Rectangle x:Name="RamPktE4" Canvas.Left="134" Canvas.Top="50" Width="12" Height="12" RadiusX="3" RadiusY="3" Fill="{DynamicResource Cpu}" Opacity="0">
+                                        <Rectangle.RenderTransform><TranslateTransform x:Name="RamPkt4"/></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <TextBlock Canvas.Left="4" Canvas.Top="40" Width="92" Text="a CPU busca dados na RAM o tempo todo" Style="{StaticResource ArtLabel}"/>
+                                    <TextBlock Canvas.Left="190" Canvas.Top="40" Width="90" Text="bilhões de vezes por segundo" Style="{StaticResource ArtLabel}"/>
+                                    <TextBlock Canvas.Left="72" Canvas.Top="163" Text="RAM: a mesa de trabalho do PC" Style="{StaticResource ArtLabel}"/>
+                                </Canvas>
+
+                                <!-- VRAM: tanque que enche e transborda para a RAM -->
+                                <Canvas x:Name="Art_vram" Visibility="Collapsed">
+                                    <Rectangle Canvas.Left="14" Canvas.Top="64" Width="72" Height="56" RadiusX="8" RadiusY="8"
+                                               Fill="{DynamicResource Card}" Stroke="{DynamicResource Gpu}" StrokeThickness="2"/>
+                                    <TextBlock Canvas.Left="34" Canvas.Top="81" Text="GPU" FontWeight="Bold" FontSize="15" Foreground="{DynamicResource Gpu}"/>
+                                    <Rectangle Canvas.Left="89" Canvas.Top="87" Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="{DynamicResource Gpu}">
+                                        <Rectangle.RenderTransform><TranslateTransform x:Name="VramPkt"/></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <TextBlock Canvas.Left="106" Canvas.Top="8" Text="VRAM 8 GB" FontWeight="SemiBold" Style="{StaticResource ArtLabel}"/>
+                                    <Rectangle Canvas.Left="104" Canvas.Top="26" Width="62" Height="128" RadiusX="8" RadiusY="8"
+                                               Fill="{DynamicResource Track}" Stroke="{DynamicResource TextDim}" StrokeThickness="1.5"/>
+                                    <Rectangle Canvas.Left="108" Canvas.Top="30" Width="54" Height="120" RadiusX="5" RadiusY="5" Fill="{DynamicResource Gpu}" RenderTransformOrigin="0.5,1">
+                                        <Rectangle.RenderTransform><ScaleTransform x:Name="VramFill" ScaleY="0.15"/></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <Rectangle x:Name="VramDanger" Canvas.Left="108" Canvas.Top="30" Width="54" Height="120" RadiusX="5" RadiusY="5" Fill="{DynamicResource Bad}" Opacity="0"/>
+                                    <Path Data="M166,40 C196,40 196,92 214,92" Stroke="{DynamicResource TextDim}" StrokeThickness="1.5" StrokeDashArray="3 2" Opacity="0.7"/>
+                                    <Rectangle Canvas.Left="214" Canvas.Top="72" Width="58" Height="40" RadiusX="6" RadiusY="6"
+                                               Fill="{DynamicResource Card}" Stroke="{DynamicResource TextDim}" StrokeThickness="1.5"/>
+                                    <TextBlock Canvas.Left="229" Canvas.Top="83" Text="RAM" FontWeight="Bold" FontSize="13" Foreground="{DynamicResource TextDim}"/>
+                                    <TextBlock Canvas.Left="210" Canvas.Top="116" Width="70" Text="longe e lenta para a GPU" Style="{StaticResource ArtLabel}"/>
+                                    <Rectangle x:Name="VramOverE1" Canvas.Left="166" Canvas.Top="35" Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="{DynamicResource Bad}" Opacity="0">
+                                        <Rectangle.RenderTransform><TranslateTransform x:Name="VramOver1"/></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <Rectangle x:Name="VramOverE2" Canvas.Left="166" Canvas.Top="35" Width="10" Height="10" RadiusX="2" RadiusY="2" Fill="{DynamicResource Bad}" Opacity="0">
+                                        <Rectangle.RenderTransform><TranslateTransform x:Name="VramOver2"/></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <TextBlock x:Name="VramWarn" Canvas.Left="70" Canvas.Top="160" Text="⚠ VRAM cheia: travadinhas!" FontWeight="Bold" FontSize="12" Foreground="{DynamicResource Bad}" Opacity="0"/>
+                                </Canvas>
+
+                                <!-- Disco: HD girando devagar x SSD instantâneo -->
+                                <Canvas x:Name="Art_disco" Visibility="Collapsed">
+                                    <TextBlock Canvas.Left="8" Canvas.Top="2" Text="HD (pratos girando)" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource Text}"/>
+                                    <Rectangle Canvas.Left="8" Canvas.Top="22" Width="122" Height="118" RadiusX="8" RadiusY="8"
+                                               Fill="{DynamicResource Card}" Stroke="{DynamicResource TextDim}" StrokeThickness="1.5"/>
+                                    <Ellipse Canvas.Left="18" Canvas.Top="32" Width="90" Height="90" Fill="{DynamicResource Track}" Stroke="{DynamicResource TextDim}" StrokeThickness="1.5"/>
+                                    <Canvas Canvas.Left="18" Canvas.Top="32" Width="90" Height="90">
+                                        <Canvas.RenderTransform><RotateTransform x:Name="HdSpin" CenterX="45" CenterY="45"/></Canvas.RenderTransform>
+                                        <Line X1="45" Y1="45" X2="45" Y2="6" Stroke="{DynamicResource TextDim}" StrokeThickness="2" Opacity="0.6"/>
+                                        <Ellipse Canvas.Left="41" Canvas.Top="10" Width="8" Height="8" Fill="{DynamicResource Cpu}"/>
+                                    </Canvas>
+                                    <Ellipse Canvas.Left="57" Canvas.Top="71" Width="12" Height="12" Fill="{DynamicResource TextDim}"/>
+                                    <Line X1="118" Y1="128" X2="82" Y2="62" Stroke="{DynamicResource Accent}" StrokeThickness="4" StrokeStartLineCap="Round" StrokeEndLineCap="Round">
+                                        <Line.RenderTransform><RotateTransform x:Name="HdArm" CenterX="118" CenterY="128"/></Line.RenderTransform>
+                                    </Line>
+                                    <Ellipse Canvas.Left="111" Canvas.Top="121" Width="14" Height="14" Fill="{DynamicResource TextDim}"/>
+                                    <Rectangle Canvas.Left="8" Canvas.Top="150" Width="122" Height="8" RadiusX="4" RadiusY="4" Fill="{DynamicResource Track}"/>
+                                    <Rectangle Canvas.Left="8" Canvas.Top="150" Width="122" Height="8" RadiusX="4" RadiusY="4" Fill="{DynamicResource Warn}" RenderTransformOrigin="0,0.5">
+                                        <Rectangle.RenderTransform><ScaleTransform x:Name="HdBar" ScaleX="0"/></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <TextBlock Canvas.Left="8" Canvas.Top="162" Text="carregando..." Style="{StaticResource ArtLabel}"/>
+                                    <TextBlock x:Name="HdDone" Canvas.Left="80" Canvas.Top="162" Text="pronto!" FontWeight="Bold" FontSize="10.5" Foreground="{DynamicResource Warn}" Opacity="0"/>
+
+                                    <TextBlock Canvas.Left="150" Canvas.Top="30" Text="SSD (sem partes móveis)" FontWeight="SemiBold" FontSize="11.5" Foreground="{DynamicResource Text}"/>
+                                    <Rectangle Canvas.Left="150" Canvas.Top="50" Width="122" Height="64" RadiusX="6" RadiusY="6"
+                                               Fill="{DynamicResource Card}" Stroke="{DynamicResource TextDim}" StrokeThickness="1.5"/>
+                                    <Rectangle Canvas.Left="160" Canvas.Top="64" Width="28" Height="36" RadiusX="2" RadiusY="2" Fill="{DynamicResource TextDim}" Opacity="0.55"/>
+                                    <Rectangle Canvas.Left="196" Canvas.Top="64" Width="28" Height="36" RadiusX="2" RadiusY="2" Fill="{DynamicResource TextDim}" Opacity="0.55"/>
+                                    <Rectangle Canvas.Left="232" Canvas.Top="64" Width="28" Height="36" RadiusX="2" RadiusY="2" Fill="{DynamicResource TextDim}" Opacity="0.55"/>
+                                    <Rectangle x:Name="SsdFlash" Canvas.Left="160" Canvas.Top="64" Width="100" Height="36" RadiusX="2" RadiusY="2" Fill="{DynamicResource Good}" Opacity="0"/>
+                                    <Rectangle Canvas.Left="150" Canvas.Top="150" Width="122" Height="8" RadiusX="4" RadiusY="4" Fill="{DynamicResource Track}"/>
+                                    <Rectangle Canvas.Left="150" Canvas.Top="150" Width="122" Height="8" RadiusX="4" RadiusY="4" Fill="{DynamicResource Good}" RenderTransformOrigin="0,0.5">
+                                        <Rectangle.RenderTransform><ScaleTransform x:Name="SsdBar" ScaleX="0"/></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <TextBlock x:Name="SsdDone" Canvas.Left="150" Canvas.Top="162" Text="pronto!" FontWeight="Bold" FontSize="10.5" Foreground="{DynamicResource Good}" Opacity="0"/>
+                                </Canvas>
+
+                                <!-- Temperatura: termômetro subindo e clock caindo (throttling) -->
+                                <Canvas x:Name="Art_temperatura" Visibility="Collapsed">
+                                    <Rectangle Canvas.Left="36" Canvas.Top="12" Width="28" Height="124" RadiusX="14" RadiusY="14"
+                                               Fill="{DynamicResource Track}" Stroke="{DynamicResource TextDim}" StrokeThickness="1.5"/>
+                                    <Rectangle Canvas.Left="43" Canvas.Top="22" Width="14" Height="116" RadiusX="7" RadiusY="7" Fill="{DynamicResource Warn}" RenderTransformOrigin="0.5,1">
+                                        <Rectangle.RenderTransform><ScaleTransform x:Name="TempFill" ScaleY="0.25"/></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <Rectangle x:Name="TempHot" Canvas.Left="43" Canvas.Top="22" Width="14" Height="116" RadiusX="7" RadiusY="7" Fill="{DynamicResource Bad}" Opacity="0"/>
+                                    <Ellipse Canvas.Left="28" Canvas.Top="126" Width="44" Height="44" Fill="{DynamicResource Warn}" Stroke="{DynamicResource TextDim}" StrokeThickness="1.5"/>
+                                    <Path Data="M68,30 H76 M68,55 H74 M68,80 H76 M68,105 H74" Stroke="{DynamicResource TextDim}" StrokeThickness="1.5"/>
+                                    <TextBlock Canvas.Left="79" Canvas.Top="23" Text="95 °C" Style="{StaticResource ArtLabel}"/>
+                                    <TextBlock Canvas.Left="79" Canvas.Top="73" Text="60 °C" Style="{StaticResource ArtLabel}"/>
+
+                                    <TextBlock Canvas.Left="120" Canvas.Top="12" Width="155" Text="Quanto mais quente, mais perto do limite de segurança" Style="{StaticResource ArtLabel}"/>
+                                    <Path x:Name="TempWaveE1" Canvas.Left="134" Canvas.Top="64" Data="M0,24 C7,18 -7,10 0,4" Stroke="{DynamicResource Bad}" StrokeThickness="2.5" StrokeEndLineCap="Round" StrokeStartLineCap="Round" Opacity="0">
+                                        <Path.RenderTransform><TranslateTransform x:Name="TempWave1"/></Path.RenderTransform>
+                                    </Path>
+                                    <Path x:Name="TempWaveE2" Canvas.Left="156" Canvas.Top="64" Data="M0,24 C7,18 -7,10 0,4" Stroke="{DynamicResource Bad}" StrokeThickness="2.5" StrokeEndLineCap="Round" StrokeStartLineCap="Round" Opacity="0">
+                                        <Path.RenderTransform><TranslateTransform x:Name="TempWave2"/></Path.RenderTransform>
+                                    </Path>
+                                    <Path x:Name="TempWaveE3" Canvas.Left="178" Canvas.Top="64" Data="M0,24 C7,18 -7,10 0,4" Stroke="{DynamicResource Bad}" StrokeThickness="2.5" StrokeEndLineCap="Round" StrokeStartLineCap="Round" Opacity="0">
+                                        <Path.RenderTransform><TranslateTransform x:Name="TempWave3"/></Path.RenderTransform>
+                                    </Path>
+                                    <Rectangle Canvas.Left="120" Canvas.Top="94" Width="72" Height="56" RadiusX="8" RadiusY="8"
+                                               Fill="{DynamicResource Card}" Stroke="{DynamicResource TextDim}" StrokeThickness="2"/>
+                                    <TextBlock Canvas.Left="141" Canvas.Top="111" Text="CPU" FontWeight="Bold" FontSize="14" Foreground="{DynamicResource Text}"/>
+                                    <TextBlock Canvas.Left="204" Canvas.Top="98" Text="velocidade" Style="{StaticResource ArtLabel}"/>
+                                    <TextBlock x:Name="TempFast" Canvas.Left="204" Canvas.Top="112" Text="4,8 GHz" FontWeight="Bold" FontSize="17" Foreground="{DynamicResource Good}"/>
+                                    <TextBlock x:Name="TempSlow" Canvas.Left="204" Canvas.Top="112" Text="3,1 GHz" FontWeight="Bold" FontSize="17" Foreground="{DynamicResource Bad}" Opacity="0"/>
+                                    <TextBlock x:Name="TempWarn" Canvas.Left="100" Canvas.Top="160" Text="Throttling! A CPU se protege." FontWeight="Bold" FontSize="12" Foreground="{DynamicResource Bad}" Opacity="0"/>
+                                </Canvas>
+
+                                <!-- FPS: filme passando e gráfico de frametime com uma travadinha -->
+                                <Canvas x:Name="Art_fps" Visibility="Collapsed">
+                                    <Canvas Canvas.Left="10" Canvas.Top="12" Width="260" Height="56" ClipToBounds="True">
+                                        <Canvas x:Name="FilmStrip">
+                                            <Canvas.RenderTransform><TranslateTransform x:Name="FilmMove"/></Canvas.RenderTransform>
+                                        </Canvas>
+                                    </Canvas>
+                                    <Line X1="10" Y1="150" X2="270" Y2="150" Stroke="{DynamicResource Border}" StrokeThickness="1.5"/>
+                                    <Line X1="10" Y1="132" X2="270" Y2="132" Stroke="{DynamicResource TextDim}" StrokeThickness="1" StrokeDashArray="4 3" Opacity="0.7"/>
+                                    <TextBlock Canvas.Left="190" Canvas.Top="117" Text="16,7 ms = 60 FPS" Style="{StaticResource ArtLabel}"/>
+                                    <Polyline Points="10,133 30,131 50,134 70,132 90,133 110,131 122,128 130,94 138,129 150,132 170,133 190,131 210,134 230,132 250,133 270,132"
+                                              Stroke="{DynamicResource Gpu}" StrokeThickness="2.5" StrokeLineJoin="Round"/>
+                                    <Ellipse x:Name="FpsSpike" Canvas.Left="122" Canvas.Top="86" Width="16" Height="16" Stroke="{DynamicResource Bad}" StrokeThickness="2"/>
+                                    <TextBlock Canvas.Left="142" Canvas.Top="84" Text="travadinha!" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource Bad}"/>
+                                    <Rectangle Canvas.Left="10" Canvas.Top="86" Width="2" Height="64" Fill="{DynamicResource Accent}" Opacity="0.7">
+                                        <Rectangle.RenderTransform><TranslateTransform x:Name="FpsScan"/></Rectangle.RenderTransform>
+                                    </Rectangle>
+                                    <TextBlock Canvas.Left="10" Canvas.Top="158" Text="frametime: quanto tempo cada quadro levou" Style="{StaticResource ArtLabel}"/>
+                                </Canvas>
+                            </Grid>
+                        </Viewbox>
+                    </Border>
+
+                    <StackPanel x:Name="TopicText" Grid.Column="2">
+                        <StackPanel.RenderTransform><TranslateTransform x:Name="TopicShift"/></StackPanel.RenderTransform>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="TopicIcon" FontSize="24" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="{DynamicResource Text}"/>
+                            <TextBlock x:Name="TopicTitle" FontSize="22" FontWeight="Bold" VerticalAlignment="Center" Foreground="{DynamicResource Text}"/>
+                        </StackPanel>
+                        <TextBlock x:Name="TopicLead" Style="{StaticResource Body}" Margin="0,8,0,12" LineHeight="20"/>
+                        <Border CornerRadius="10" Background="{DynamicResource AccentSoft}" Padding="12,9" Margin="0,0,0,14">
+                            <TextBlock Style="{StaticResource Body}">
+                                <Run FontWeight="Bold" Foreground="{DynamicResource Accent}">Pense assim:</Run>
+                                <Run x:Name="TopicAnalogy"/>
+                            </TextBlock>
+                        </Border>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="18"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="🔎 COMO PERCEBER" Style="{StaticResource CardTitle}"/>
+                                <StackPanel x:Name="TopicSigns"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="🛠 O QUE FAZER" Style="{StaticResource CardTitle}"/>
+                                <StackPanel x:Name="TopicFixes"/>
+                            </StackPanel>
+                        </Grid>
+                        <Button x:Name="TopicLink" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left" Margin="0,10,0,0" Click="OnTopicLink"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- ===== Laboratório do gargalo ===== -->
+            <TextBlock Text="Laboratório do gargalo" Style="{StaticResource SectionTitle}"/>
+            <TextBlock Text="Uma simulação para você brincar: mude a força da CPU e da GPU, a resolução e o limitador de FPS, e veja quem passa a segurar o jogo."
+                       Style="{StaticResource SectionHint}"/>
+
+            <Border x:Name="LabCard" Style="{StaticResource Card}" Padding="22">
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="28"/>
+                            <ColumnDefinition Width="300"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Controles -->
+                        <StackPanel>
+                            <DockPanel>
+                                <TextBlock x:Name="CpuValue" DockPanel.Dock="Right" FontWeight="SemiBold" Foreground="{DynamicResource Cpu}"/>
+                                <TextBlock Text="Força da CPU" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
+                            </DockPanel>
+                            <TextBlock Text="Quantos quadros por segundo o processador consegue preparar." Style="{StaticResource Dim}"/>
+                            <Slider x:Name="CpuSlider" Style="{StaticResource LabSlider}" Foreground="{DynamicResource Cpu}"
+                                    Minimum="20" Maximum="300" Value="140" SmallChange="5" LargeChange="20" Margin="0,4,0,14"
+                                    ValueChanged="OnLabChanged"/>
+
+                            <DockPanel>
+                                <TextBlock x:Name="GpuValue" DockPanel.Dock="Right" FontWeight="SemiBold" Foreground="{DynamicResource Gpu}"/>
+                                <TextBlock Text="Força da GPU" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
+                            </DockPanel>
+                            <TextBlock Text="Quantos quadros por segundo a placa de vídeo consegue desenhar em 1080p." Style="{StaticResource Dim}"/>
+                            <Slider x:Name="GpuSlider" Style="{StaticResource LabSlider}" Foreground="{DynamicResource Gpu}"
+                                    Minimum="20" Maximum="300" Value="110" SmallChange="5" LargeChange="20" Margin="0,4,0,14"
+                                    ValueChanged="OnLabChanged"/>
+
+                            <TextBlock Text="Resolução do jogo" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
+                            <TextBlock Text="Mais pixels = mais trabalho para a GPU. Para a CPU quase nada muda." Style="{StaticResource Dim}" Margin="0,0,0,6"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                                <RadioButton x:Name="Res1080" Content="1080p" Style="{StaticResource Segment}" GroupName="labres" IsChecked="True" Checked="OnLabChanged"/>
+                                <RadioButton x:Name="Res1440" Content="1440p" Style="{StaticResource Segment}" GroupName="labres" Checked="OnLabChanged"/>
+                                <RadioButton x:Name="Res4K" Content="4K" Style="{StaticResource Segment}" GroupName="labres" Checked="OnLabChanged"/>
+                            </StackPanel>
+
+                            <DockPanel>
+                                <CheckBox x:Name="CapSwitch" DockPanel.Dock="Left" Style="{StaticResource Switch}" VerticalAlignment="Center"
+                                          Checked="OnLabChanged" Unchecked="OnLabChanged" Margin="0,0,12,0"/>
+                                <StackPanel>
+                                    <TextBlock Text="Limitar o FPS em 60" FontWeight="SemiBold" Foreground="{DynamicResource Text}"/>
+                                    <TextBlock Text="Como um V-Sync ou limitador de FPS ligado no jogo." Style="{StaticResource Dim}"/>
+                                </StackPanel>
+                            </DockPanel>
+                        </StackPanel>
+
+                        <!-- Resultado -->
+                        <Border Grid.Column="2" CornerRadius="12" Background="{DynamicResource Bg}" Padding="16">
+                            <StackPanel>
+                                <TextBlock Text="RESULTADO NO JOGO" Style="{StaticResource CardTitle}"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="LabFps" Text="0" FontSize="40" FontWeight="Bold" Foreground="{DynamicResource Text}"/>
+                                    <TextBlock Text="FPS" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextDim}" VerticalAlignment="Bottom" Margin="6,0,0,9"/>
+                                </StackPanel>
+                                <TextBlock x:Name="LabFrametime" Style="{StaticResource Dim}" Margin="0,0,0,10"/>
+
+                                <DockPanel>
+                                    <TextBlock x:Name="CpuUseText" DockPanel.Dock="Right" Style="{StaticResource Dim}"/>
+                                    <TextBlock Text="CPU ocupada" Style="{StaticResource Dim}"/>
+                                </DockPanel>
+                                <Grid Height="10" Margin="0,4,0,10">
+                                    <Border CornerRadius="5" Background="{DynamicResource Track}"/>
+                                    <Border CornerRadius="5" Background="{DynamicResource Cpu}" RenderTransformOrigin="0,0.5">
+                                        <Border.RenderTransform><ScaleTransform x:Name="CpuBarScale" ScaleX="0"/></Border.RenderTransform>
+                                    </Border>
+                                </Grid>
+                                <DockPanel>
+                                    <TextBlock x:Name="GpuUseText" DockPanel.Dock="Right" Style="{StaticResource Dim}"/>
+                                    <TextBlock Text="GPU ocupada" Style="{StaticResource Dim}"/>
+                                </DockPanel>
+                                <Grid Height="10" Margin="0,4,0,14">
+                                    <Border CornerRadius="5" Background="{DynamicResource Track}"/>
+                                    <Border CornerRadius="5" Background="{DynamicResource Gpu}" RenderTransformOrigin="0,0.5">
+                                        <Border.RenderTransform><ScaleTransform x:Name="GpuBarScale" ScaleX="0"/></Border.RenderTransform>
+                                    </Border>
+                                </Grid>
+
+                                <TextBlock x:Name="LabVerdict" FontSize="16" FontWeight="Bold" TextWrapping="Wrap"/>
+                                <TextBlock x:Name="LabVerdictText" Style="{StaticResource Body}" FontSize="12.5" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <!-- Linha de montagem animada: CPU prepara, GPU desenha, a tela mostra -->
+                    <Viewbox Margin="0,20,0,0" MaxHeight="130" Stretch="Uniform">
+                        <Canvas Width="640" Height="110">
+                            <Line X1="110" Y1="55" X2="300" Y2="55" Stroke="{DynamicResource Border}" StrokeThickness="2" StrokeDashArray="4 3"/>
+                            <Line X1="400" Y1="55" X2="540" Y2="55" Stroke="{DynamicResource Border}" StrokeThickness="2" StrokeDashArray="4 3"/>
+                            <Canvas x:Name="LabQueue">
+                                <Rectangle Canvas.Left="280" Canvas.Top="47" Width="16" Height="16" RadiusX="3" RadiusY="3" Fill="{DynamicResource Cpu}" Opacity="0.75"/>
+                                <Rectangle Canvas.Left="262" Canvas.Top="47" Width="16" Height="16" RadiusX="3" RadiusY="3" Fill="{DynamicResource Cpu}" Opacity="0.75"/>
+                                <Rectangle Canvas.Left="244" Canvas.Top="47" Width="16" Height="16" RadiusX="3" RadiusY="3" Fill="{DynamicResource Cpu}" Opacity="0.75"/>
+                                <TextBlock Canvas.Left="236" Canvas.Top="68" Text="fila" Style="{StaticResource ArtLabel}"/>
+                            </Canvas>
+                            <Canvas x:Name="FrameLayer"/>
+
+                            <Rectangle x:Name="CpuGlow" Canvas.Left="4" Canvas.Top="19" Width="112" Height="72" RadiusX="14" RadiusY="14" Stroke="{DynamicResource Accent}" StrokeThickness="3"/>
+                            <Rectangle Canvas.Left="10" Canvas.Top="25" Width="100" Height="60" RadiusX="10" RadiusY="10"
+                                       Fill="{DynamicResource Card}" Stroke="{DynamicResource Cpu}" StrokeThickness="2"/>
+                            <TextBlock Canvas.Left="43" Canvas.Top="31" Text="CPU" FontWeight="Bold" FontSize="17" Foreground="{DynamicResource Cpu}"/>
+                            <TextBlock Canvas.Left="38" Canvas.Top="56" Text="prepara" Style="{StaticResource ArtLabel}" FontSize="12"/>
+                            <TextBlock x:Name="CpuWait" Canvas.Left="4" Canvas.Top="0" Text="⏳ esperando a GPU" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource Warn}"/>
+
+                            <Rectangle x:Name="GpuGlow" Canvas.Left="294" Canvas.Top="19" Width="112" Height="72" RadiusX="14" RadiusY="14" Stroke="{DynamicResource Accent}" StrokeThickness="3"/>
+                            <Rectangle Canvas.Left="300" Canvas.Top="25" Width="100" Height="60" RadiusX="10" RadiusY="10"
+                                       Fill="{DynamicResource Card}" Stroke="{DynamicResource Gpu}" StrokeThickness="2"/>
+                            <TextBlock Canvas.Left="332" Canvas.Top="31" Text="GPU" FontWeight="Bold" FontSize="17" Foreground="{DynamicResource Gpu}"/>
+                            <TextBlock Canvas.Left="327" Canvas.Top="56" Text="desenha" Style="{StaticResource ArtLabel}" FontSize="12"/>
+                            <TextBlock x:Name="GpuWait" Canvas.Left="294" Canvas.Top="0" Text="⏳ esperando a CPU" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource Warn}"/>
+
+                            <Rectangle x:Name="MonGlow" Canvas.Left="534" Canvas.Top="16" Width="102" Height="72" RadiusX="10" RadiusY="10" Stroke="{DynamicResource Accent}" StrokeThickness="3"/>
+                            <Rectangle Canvas.Left="540" Canvas.Top="22" Width="90" Height="60" RadiusX="6" RadiusY="6"
+                                       Fill="{DynamicResource Track}" Stroke="{DynamicResource TextDim}" StrokeThickness="2"/>
+                            <TextBlock Canvas.Left="573" Canvas.Top="43" Text="tela" Style="{StaticResource ArtLabel}" FontSize="12"/>
+                            <Rectangle Canvas.Left="578" Canvas.Top="82" Width="14" Height="12" Fill="{DynamicResource TextDim}"/>
+                            <Rectangle Canvas.Left="566" Canvas.Top="94" Width="38" Height="4" RadiusX="2" RadiusY="2" Fill="{DynamicResource TextDim}"/>
+                            <TextBlock x:Name="CapLabel" Canvas.Left="540" Canvas.Top="0" Text="🔒 limite: 60 FPS" FontWeight="SemiBold" FontSize="12" Foreground="{DynamicResource Warn}"/>
+                        </Canvas>
+                    </Viewbox>
+                </StackPanel>
+            </Border>
+
+            <!-- ===== Passo a passo ===== -->
+            <TextBlock Text="Como achar o seu gargalo em 4 passos" Style="{StaticResource SectionTitle}"/>
+            <TextBlock Text="Um roteiro simples usando as outras páginas do Bottleneck Hunter." Style="{StaticResource SectionHint}"/>
+            <WrapPanel>
+                <Border Style="{StaticResource Card}" Width="232">
+                    <StackPanel>
+                        <Border Width="34" Height="34" CornerRadius="17" Background="{DynamicResource Accent}" HorizontalAlignment="Left">
+                            <TextBlock Text="1" Foreground="White" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="Conheça seu PC" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource Text}" Margin="0,10,0,4"/>
+                        <TextBlock Text="Veja qual CPU, GPU, quanta RAM e que tipo de disco você tem. Confira se a RAM está em dual channel." Style="{StaticResource Dim}" Height="68"/>
+                        <Button Content="Abrir Meu PC →" Tag="system" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,8,0,0" Click="OnNavigate"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}" Width="232">
+                    <StackPanel>
+                        <Border Width="34" Height="34" CornerRadius="17" Background="{DynamicResource Accent}" HorizontalAlignment="Left">
+                            <TextBlock Text="2" Foreground="White" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="Jogue e grave" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource Text}" Margin="0,10,0,4"/>
+                        <TextBlock Text="Abra o jogo, comece uma sessão em Caçar gargalos e jogue alguns minutos numa parte pesada." Style="{StaticResource Dim}" Height="68"/>
+                        <Button Content="Caçar gargalos →" Tag="bottleneck" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,8,0,0" Click="OnNavigate"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}" Width="232">
+                    <StackPanel>
+                        <Border Width="34" Height="34" CornerRadius="17" Background="{DynamicResource Accent}" HorizontalAlignment="Left">
+                            <TextBlock Text="3" Foreground="White" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="Olhe as temperaturas" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource Text}" Margin="0,10,0,4"/>
+                        <TextBlock Text="Peça quente perde velocidade. Veja o máximo de CPU e GPU na página Sensores." Style="{StaticResource Dim}" Height="68"/>
+                        <Button Content="Abrir Sensores →" Tag="sensors" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,8,0,0" Click="OnNavigate"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource Card}" Width="232">
+                    <StackPanel>
+                        <Border Width="34" Height="34" CornerRadius="17" Background="{DynamicResource Accent}" HorizontalAlignment="Left">
+                            <TextBlock Text="4" Foreground="White" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="Ajuste e compare" FontSize="15" FontWeight="SemiBold" Foreground="{DynamicResource Text}" Margin="0,10,0,4"/>
+                        <TextBlock Text="Aplique as otimizações e rode o benchmark de novo. Número maior = ajuste que valeu a pena." Style="{StaticResource Dim}" Height="68"/>
+                        <Button Content="Otimizar o PC →" Tag="optimize" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Margin="0,8,0,0" Click="OnNavigate"/>
+                    </StackPanel>
+                </Border>
+            </WrapPanel>
+
+            <!-- ===== Quiz ===== -->
+            <TextBlock Text="Teste o que você aprendeu" Style="{StaticResource SectionTitle}"/>
+            <TextBlock Text="Oito perguntas rápidas. Errar faz parte: cada resposta vem com a explicação." Style="{StaticResource SectionHint}"/>
+            <Border Style="{StaticResource Card}" Padding="22">
+                <StackPanel>
+                    <DockPanel Margin="0,0,0,8">
+                        <TextBlock x:Name="QuizBest" DockPanel.Dock="Right" Style="{StaticResource Dim}"/>
+                        <TextBlock x:Name="QuizCounter" Style="{StaticResource CardTitle}" Margin="0"/>
+                    </DockPanel>
+                    <Grid Height="6" Margin="0,0,0,16">
+                        <Border CornerRadius="3" Background="{DynamicResource Track}"/>
+                        <Border CornerRadius="3" Background="{DynamicResource Accent}" RenderTransformOrigin="0,0.5">
+                            <Border.RenderTransform><ScaleTransform x:Name="QuizBarScale" ScaleX="0"/></Border.RenderTransform>
+                        </Border>
+                    </Grid>
+
+                    <StackPanel x:Name="QuizQuestionPanel">
+                        <StackPanel.RenderTransform><TranslateTransform x:Name="QuizShift"/></StackPanel.RenderTransform>
+                        <TextBlock x:Name="QuizQuestionText" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" Foreground="{DynamicResource Text}" Margin="0,0,0,14"/>
+                        <StackPanel x:Name="QuizOptions" MaxWidth="640" HorizontalAlignment="Left"/>
+                        <Border x:Name="QuizFeedback" CornerRadius="10" Background="{DynamicResource Track}" Padding="14,10" Margin="0,6,0,0"
+                                MaxWidth="640" HorizontalAlignment="Left" Visibility="Collapsed">
+                            <TextBlock x:Name="QuizFeedbackText" Style="{StaticResource Body}"/>
+                        </Border>
+                        <Button x:Name="QuizNext" Style="{StaticResource PrimaryButton}" HorizontalAlignment="Left" Margin="0,14,0,0"
+                                Visibility="Collapsed" Click="OnQuizNext"/>
+                    </StackPanel>
+
+                    <StackPanel x:Name="QuizResultPanel" Visibility="Collapsed">
+                        <StackPanel.RenderTransform><ScaleTransform x:Name="QuizResultScale"/></StackPanel.RenderTransform>
+                        <TextBlock x:Name="QuizScoreText" Style="{StaticResource BigValue}" FontSize="38"/>
+                        <TextBlock x:Name="QuizResultMsg" Style="{StaticResource Body}" Margin="0,4,0,14" MaxWidth="640" HorizontalAlignment="Left"/>
+                        <Button Content="Refazer o quiz" Style="{StaticResource GhostButton}" HorizontalAlignment="Left" Click="OnQuizRestart"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- ===== Glossário ===== -->
+            <TextBlock Text="Glossário" Style="{StaticResource SectionTitle}"/>
+            <TextBlock Text="Todas as palavras técnicas que aparecem no app, explicadas em uma ou duas frases. Digite para buscar ou filtre por tema."
+                       Style="{StaticResource SectionHint}"/>
+            <TextBox x:Name="GlossarySearch" Style="{StaticResource SearchBox}" Tag="Buscar um termo (ex.: VRAM, throttling, 1% low)"
+                     MaxWidth="520" HorizontalAlignment="Left" MinWidth="360" Margin="0,0,0,10" TextChanged="OnGlossarySearch"/>
+            <DockPanel Margin="0,0,14,12">
+                <TextBlock x:Name="GlossaryCount" DockPanel.Dock="Right" Style="{StaticResource Dim}" VerticalAlignment="Center"/>
+                <WrapPanel x:Name="GlossaryFilters"/>
+            </DockPanel>
+            <TextBlock x:Name="GlossaryEmpty" Style="{StaticResource Dim}" Visibility="Collapsed" Margin="0,4,0,14"
+                       Text="Nenhum termo encontrado. Tente outra palavra ou escolha o tema &quot;Todos&quot;."/>
+            <WrapPanel x:Name="GlossaryPanel"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
