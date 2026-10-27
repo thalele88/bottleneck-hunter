@@ -19,9 +19,12 @@ botão de desfazer) e um overlay de FPS para jogos, no estilo RivaTuner.
 - **Aprenda:** o que é gargalo, CPU, GPU, RAM, VRAM, frametime e mais.
 
 ## Como baixar
-1. Abra a aba [Releases](../../releases) e baixe `BottleneckHunter-win-x64.zip` da versão **latest**.
-2. Extraia a pasta e abra `BottleneckHunter.exe` (ele pede permissão de administrador para ler os sensores).
-3. Para ver a temperatura da CPU, instale o driver PawnIO uma vez: `winget install namazso.PawnIO`.
+1. Abra a aba [Releases](../../releases) e baixe **`BottleneckHunter-Setup.exe`** da versão **latest**.
+2. Rode o instalador. Ele cria o atalho na área de trabalho e no Menu Iniciar e, se você marcar, instala o driver de sensores PawnIO (necessário para ver a temperatura da CPU).
+3. Abra pelo atalho **Bottleneck Hunter** (ele pede permissão de administrador para ler os sensores).
+
+Prefere sem instalar? Baixe `BottleneckHunter-win-x64.zip`, extraia e abra `BottleneckHunter.exe`.
+O Windows pode mostrar o aviso "O Windows protegeu o computador" porque o app ainda não tem assinatura digital: clique em **Mais informações → Executar assim mesmo**.
 
 ## Para desenvolvedores
 - Windows 10/11 + [.NET 8 SDK](https://dotnet.microsoft.com/download).

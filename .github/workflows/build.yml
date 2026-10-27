@@ -24,11 +24,11 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      # Pasta com o .exe e as DLLs ao lado (sem extrair nada para %TEMP%, que qualquer usuário pode alterar).
       # Uma chave de cor repetida como Style só quebra quando o app abre; pega isso antes.
       - name: Conferir chaves de recurso
         run: python tools/check-resource-keys.py
 
+      # Pasta com o .exe e as DLLs ao lado (sem extrair nada para %TEMP%, que qualquer usuário pode alterar).
       - name: Publicar
         run: dotnet publish src/BottleneckHunter/BottleneckHunter.csproj -c Release -r win-x64 --self-contained true -o dist/BottleneckHunter
 
@@ -36,10 +36,23 @@ jobs:
         shell: pwsh
         run: Compress-Archive -Path dist/BottleneckHunter/* -DestinationPath dist/BottleneckHunter-win-x64.zip
 
+      # Instalador com atalho na área de trabalho e no Menu Iniciar (Inno Setup).
+      - name: Gerar instalador
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+          }
+          & $iscc "/DAppVersion=0.1.${{ github.run_number }}" installer\BottleneckHunter.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - uses: actions/upload-artifact@v4
         with:
           name: BottleneckHunter-win-x64
-          path: dist/BottleneckHunter-win-x64.zip
+          path: |
+            dist/BottleneckHunter-win-x64.zip
+            dist/BottleneckHunter-Setup.exe
 
       # A cada push na main, atualiza a release "latest" para baixar sem compilar.
       - name: Atualizar release latest
@@ -54,7 +67,7 @@ jobs:
             exit 0
           fi
           gh release delete latest --yes --cleanup-tag || true
-          gh release create latest dist/BottleneckHunter-win-x64.zip \
+          gh release create latest dist/BottleneckHunter-Setup.exe dist/BottleneckHunter-win-x64.zip \
             --title "Bottleneck Hunter (última versão)" \
-            --notes "Gerado automaticamente a partir do commit ${GITHUB_SHA::7}. Baixe o .zip, extraia e abra BottleneckHunter.exe." \
+            --notes "Gerado automaticamente a partir do commit ${GITHUB_SHA::7}. Baixe **BottleneckHunter-Setup.exe** e instale (cria o atalho na área de trabalho). Ou baixe o .zip, extraia e abra BottleneckHunter.exe." \
             --prerelease
