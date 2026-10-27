@@ -9,12 +9,17 @@
     <!-- Permite compilar fora do Windows (CI/Linux); o app em si só roda no Windows. -->
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <AssemblyName>BottleneckHunter</AssemblyName>
     <RootNamespace>BottleneckHunter</RootNamespace>
     <Product>Bottleneck Hunter</Product>
     <Version>0.1.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\app.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="LibreHardwareMonitorLib" Version="0.9.6" />
